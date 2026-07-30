@@ -1,124 +1,137 @@
-"""PyQt UI components for Basalt nodes and inspector."""
+"""PyQt UI components for Basalt nodes."""
 
+import re
 from PyQt5.QtWidgets import (
-    QGraphicsRectItem, QGraphicsTextItem, QWidget, QVBoxLayout, 
-    QHBoxLayout, QLabel, QLineEdit, QTextEdit, QPushButton
+    QGraphicsProxyWidget, QWidget, QVBoxLayout, QHBoxLayout,
+    QLineEdit, QTextEdit, QTextBrowser, QPushButton
 )
-from PyQt5.QtGui import QColor, QPen, QBrush, QFont, QPainter
-from PyQt5.QtCore import QRectF, Qt, pyqtSignal
-from basalt_node import BasaltNode
+from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt
+from basalt_node import BasaltNode, LayoutSettings
 
-
-class UINode(QGraphicsRectItem):
-    """Графическое представление узла на холсте"""
-    WIDTH = 200
-    HEIGHT = 80
-
-    def __init__(self, node: BasaltNode, canvas):
-        super().__init__(0, 0, self.WIDTH, self.HEIGHT)
+class NodeWidget(QWidget):
+    def __init__(self, node: BasaltNode, canvas, settings: LayoutSettings):
+        super().__init__()
         self.node = node
         self.canvas = canvas
-        self.is_selected = False
-        self.is_collapsed = False
+        self.settings = settings
         
-        # Статичное расположение (Пространственная память)
-        self.setPos(node.x, node.y)
-        self.setFlag(QGraphicsRectItem.ItemIsSelectable, False) # Управляем выделением сами
+        self.setFixedSize(settings.node_width, settings.node_height)
         
-        self._update_appearance()
-        self._draw_text()
-
-    def _update_appearance(self):
-        if self.is_selected:
-            self.setBrush(QBrush(QColor("#e8f0ff")))
-            self.setPen(QPen(QColor("#3772d6"), 2))
-        else:
-            self.setBrush(QBrush(QColor("#ffffff")))
-            self.setPen(QPen(QColor("#cbd5e1"), 1))
-
-    def _draw_text(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(4)
+        
+        # Определяем выравнивание
+        if settings.text_align == "center": align = Qt.AlignCenter
+        elif settings.text_align == "right": align = Qt.AlignRight
+        else: align = Qt.AlignLeft
+        
         # Заголовок
-        self.title_item = QGraphicsTextItem(self.node.title, self)
-        self.title_item.setDefaultTextColor(QColor("#172033"))
-        self.title_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        self.title_item.setTextWidth(self.WIDTH - 20)
-        self.title_item.setPos(10, 10)
+        self.title_edit = QLineEdit(node.title)
+        self.title_edit.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.title_edit.setAlignment(align)
+        self.title_edit.setStyleSheet("border: none; background: transparent; padding: 0;")
+        self.title_edit.editingFinished.connect(self._on_title_changed)
         
-        # Пояснение (превью)
-        if self.node.note:
-            note_preview = self.node.note.replace('\n', ' ')
-            if len(note_preview) > 60:
-                note_preview = note_preview[:57] + "..."
-            self.note_item = QGraphicsTextItem(note_preview, self)
-            self.note_item.setDefaultTextColor(QColor("#526074"))
-            self.note_item.setFont(QFont("Segoe UI", 8))
-            self.note_item.setTextWidth(self.WIDTH - 20)
-            self.note_item.setPos(10, 35)
-        else:
-            self.note_item = None
+        # Пояснение
+        self.note_browser = QTextBrowser()
+        self.note_browser.setOpenLinks(False)
+        self.note_browser.setFont(QFont("Segoe UI", 9))
+        self.note_browser.setAlignment(align)
+        self.note_browser.setStyleSheet("border: none; background: transparent; padding: 0;")
+        self.note_browser.anchorClicked.connect(self._on_link_clicked)
+        self._update_note_display()
+        
+        # Кнопка редактирования
+        self.btn_edit = QPushButton("✏️")
+        self.btn_edit.setFixedSize(24, 24)
+        self.btn_edit.setToolTip("Редактировать пояснение")
+        self.btn_edit.setStyleSheet("border: none; background: transparent;")
+        self.btn_edit.clicked.connect(self._toggle_edit)
+        
+        note_layout = QHBoxLayout()
+        note_layout.setContentsMargins(0, 0, 0, 0)
+        note_layout.addWidget(self.note_browser)
+        note_layout.addWidget(self.btn_edit, alignment=Qt.AlignTop)
+        
+        layout.addWidget(self.title_edit)
+        layout.addLayout(note_layout)
+        
+        self.is_editing = False
+        self.note_edit = None
 
-    def set_selected(self, selected: bool):
-        self.is_selected = selected
-        self._update_appearance()
+    def _update_note_display(self):
+        text = self.node.note
+        html = re.sub(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]', 
+                      lambda m: f'<a href="{m.group(1)}">{m.group(2) or m.group(1)}</a>', 
+                      text)
+        html = html.replace('\n', '<br>')
+        if not html.strip():
+            html = "<i style='color: #9ca3af;'>Нет пояснения</i>"
+        self.note_browser.setHtml(html)
+
+    def _on_title_changed(self):
+        if self.node.title != self.title_edit.text():
+            self.node.title = self.title_edit.text()
+            self.canvas.node_changed.emit(self.node.id)
+
+    def _on_link_clicked(self, url):
+        self.canvas.link_clicked.emit(url.toString())
+
+    def _toggle_edit(self):
+        self.is_editing = not self.is_editing
+        note_layout = self.layout().itemAt(1)
+        
+        if self.is_editing:
+            self.btn_edit.setText("💾")
+            self.note_browser.hide()
+            self.note_edit = QTextEdit(self.node.note)
+            self.note_edit.setFont(QFont("Segoe UI", 9))
+            self.note_edit.setStyleSheet("border: 1px solid #cbd5e1; background: white; padding: 2px;")
+            note_layout.insertWidget(0, self.note_edit)
+            self.note_edit.setFocus()
+        else:
+            self.btn_edit.setText("✏️")
+            if self.note_edit:
+                self.node.note = self.note_edit.toPlainText()
+                self.note_edit.deleteLater()
+                self.note_edit = None
+            self.note_browser.show()
+            self._update_note_display()
+            self.canvas.node_changed.emit(self.node.id)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.canvas.select_node(self.node.id)
-            event.accept()
-        else:
-            super().mousePressEvent(event)
+        super().mousePressEvent(event)
 
 
-class NodeInspector(QWidget):
-    """Панель инспектора для редактирования узла"""
-    save_requested = pyqtSignal(str, str, str)  # node_id, title, note
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.node_id = None
+class UINode(QGraphicsProxyWidget):
+    def __init__(self, node: BasaltNode, canvas, settings: LayoutSettings):
+        super().__init__()
+        self.node = node
+        self.canvas = canvas
+        self.settings = settings
         
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(15, 15, 15, 15)
-        
-        self.lbl_title = QLabel("Узел")
-        self.lbl_title.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        layout.addWidget(self.lbl_title)
-        
-        layout.addWidget(QLabel("Название:"))
-        self.edit_title = QLineEdit()
-        self.edit_title.setFont(QFont("Segoe UI", 10))
-        layout.addWidget(self.edit_title)
-        
-        layout.addWidget(QLabel("Пояснение:"))
-        self.edit_note = QTextEdit()
-        self.edit_note.setFont(QFont("Segoe UI", 10))
-        self.edit_note.setPlaceholderText("Введите определение, ответ или детали...")
-        layout.addWidget(self.edit_note)
-        
-        self.btn_save = QPushButton("Сохранить изменения")
-        self.btn_save.setFont(QFont("Segoe UI", 10))
-        self.btn_save.clicked.connect(self._on_save)
-        layout.addWidget(self.btn_save)
-        
-        self.set_enabled(False)
+        self.widget = NodeWidget(node, canvas, settings)
+        self.setWidget(self.widget)
+        self.setPos(node.x, node.y)
+        self.setFlag(QGraphicsProxyWidget.ItemIsMovable, False)
+        self.setFlag(QGraphicsProxyWidget.ItemIsSelectable, False)
+        self._update_appearance()
 
-    def show_node(self, node: BasaltNode):
-        self.node_id = node.id
-        self.edit_title.setText(node.title)
-        self.edit_note.setPlainText(node.note)
-        self.set_enabled(True)
+    def _update_appearance(self):
+        is_selected = self.canvas.selected_id == self.node.id
+        bg = "#e8f0ff" if is_selected else "#ffffff"
+        border = "#3772d6" if is_selected else "#cbd5e1"
+        self.widget.setStyleSheet(f"""
+            NodeWidget {{
+                background-color: {bg};
+                border: 2px solid {border};
+                border-radius: 8px;
+            }}
+        """)
 
-    def clear(self):
-        self.node_id = None
-        self.edit_title.clear()
-        self.edit_note.clear()
-        self.set_enabled(False)
-
-    def set_enabled(self, enabled: bool):
-        self.edit_title.setEnabled(enabled)
-        self.edit_note.setEnabled(enabled)
-        self.btn_save.setEnabled(enabled)
-
-    def _on_save(self):
-        if self.node_id:
-            self.save_requested.emit(self.node_id, self.edit_title.text(), self.edit_note.toPlainText())
+    def set_selected(self, selected: bool):
+        self._update_appearance()

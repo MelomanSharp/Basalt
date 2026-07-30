@@ -1,102 +1,212 @@
-Проект Basalt
+<!-- markdownlint-disable MD033 -->
+````md
+<!-- markdownlint-disable MD033 -->
 
-Basalt — приложение для Windows, предназначенное для создания структурированных баз знаний в виде деревьев и их последующего изучения с использованием интервальных повторений.
+<p align="center">
 
-Идейно проект вдохновлён Obsidian и Anki, совмещая сильные стороны обоих подходов, но предлагая собственную модель организации знаний.
+  <img src="https://img.shields.io/badge/Python-3.6%2B-blue.svg" alt="Python Version">
 
-1. Представление знаний
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT">
 
-В отличие от Obsidian, где основными единицами являются Markdown-файлы, в Basalt каждая заметка представляет собой отдельное дерево с неограниченным количеством вершин, которое просматривается именно как дерево с графическим интерфейсом, внутри которого размещены заметки, а не просто как текстовая заметка.
+  <img src="https://img.shields.io/badge/Platform-Windows-lightgrey.svg" alt="Platform">
 
-Структура дерева имеет явное направление от общего к частному: от родительских узлов к дочерним. Такой подход позволяет не просто хранить информацию, а выстраивать логические связи между понятиями, сохраняя причинно-следственные зависимости и облегчая восстановление материала через понимание его структуры.
+</p>
 
-Практически к любому факту можно мысленно задать вопрос «Почему?» и создать дочерний узел, объясняющий или уточняющий этот факт. Благодаря этому приложение особенно хорошо подходит для построения баз знаний в формате «вопрос — ответ», а также для глубокой декомпозиции сложных тем.
+# Basalt
 
-Приложение поощряет хранение информации в виде большого количества небольших взаимосвязанных узлов вместо длинных монолитных заметок.
+**Basalt** is a Windows application for creating structured knowledge bases in the form of trees and studying them using spaced repetition.
 
-2. Пространственная память
+The project is conceptually inspired by Obsidian and Anki, combining the strengths of both approaches while introducing its own model for organizing knowledge.
 
-Одной из ключевых особенностей Basalt является статичность расположения узлов.
+---
 
-В отличие от Obsidian, где граф автоматически перестраивается при изменении структуры, расположение уже существующих узлов в Basalt не меняется при добавлении новых. Это позволяет задействовать пространственную память пользователя: запоминается не только сама информация, но и её положение внутри дерева.
+## Features
 
-Единственным автоматическим изменением интерфейса является перераспределение свободного горизонтального пространства между соседними узлами при необходимости.
+### 1. Knowledge Representation
 
-3. Структура узлов
+Unlike Obsidian, where the primary unit of information is a Markdown file, every note in Basalt is an independent tree with an unlimited number of nodes. These trees are viewed directly as interactive graphical structures rather than plain text documents.
 
-Каждый узел состоит из двух частей:
+Each tree has an explicit top-down hierarchy, progressing from general concepts to more specific ones through parent-child relationships. This makes it possible not only to store information but also to preserve logical and causal connections, making it easier to reconstruct knowledge by understanding its structure.
 
-Название — основное понятие, вопрос или утверждение.
-Пояснение — дополнительный текст, содержащий ответ, определение, комментарии или нюансы.
+Almost any fact can naturally lead to the question **"Why?"**, allowing the creation of a child node that explains or refines that fact. This makes Basalt especially suitable for building knowledge bases in a **question–answer** format as well as for deeply decomposing complex topics.
 
-Если узел сформулирован как вопрос, то пояснение обычно содержит ответ.
+The application encourages storing knowledge as a large number of small interconnected nodes instead of long monolithic notes.
 
-Если узел представляет собой понятие или утверждение, пояснение используется для хранения дополнительных деталей, не влияющих на структуру дерева.
+### 2. Spatial Memory
 
-Дочерние узлы предназначены для дальнейшего раскрытия темы и логически продолжают родительский узел.
+One of Basalt's core ideas is the **static positioning of nodes**.
 
-По умолчанию каждый узел имеет только одного родителя, что сохраняет древовидную структуру.
+Unlike Obsidian, where the graph is automatically rearranged whenever its structure changes, existing nodes in Basalt never move when new ones are added. This allows users to leverage spatial memory, remembering not only the information itself but also its physical location within the tree.
 
-При необходимости в настройках проекта можно разрешить ограниченное количество родителей для одного узла. Это позволяет моделировать ситуации, когда некоторое следствие возникает только при сочетании нескольких причин. Для сохранения читаемости дерева максимальное число родителей задаётся пользователем.
+The only automatic layout adjustment is the redistribution of available horizontal space between neighboring nodes when necessary.
 
-Количество дочерних узлов не ограничено, однако слишком большие ветви не рекомендуются, поскольку ухудшают восприятие структуры.
+### 3. Node Structure
 
-Для работы с большими деревьями поддерживаются:
+Each node consists of two parts:
 
-масштабирование (Zoom);
-сворачивание и разворачивание поддеревьев.
+- **Title** — the main concept, question, or statement.
+- **Description** — additional text containing an answer, definition, comments, or important details.
 
-Создание новых узлов осуществляется непосредственно из интерфейса:
+If the node is formulated as a question, the description typically contains its answer.
 
-снизу — добавление или удаление дочернего узла;
-сверху — добавление нового родительского узла;
-справа — создание или удаление пояснения.
-4. Связи между деревьями
+If the node represents a concept or statement, the description stores supplementary information that does not affect the tree structure.
 
-Как и в Obsidian, отдельные деревья могут связываться между собой ссылками.
+Child nodes are intended to further develop the topic and logically extend the parent node.
 
-Используется привычный синтаксис:
+By default, every node has only one parent, preserving a strict tree structure.
 
-[[Название дерева]]
+If needed, project settings can allow a limited number of parents for a single node. This makes it possible to model situations where an effect results only from the combination of multiple causes. To preserve readability, the maximum number of parents is configurable.
 
-или
+The number of child nodes is unlimited, although excessively large branches are discouraged because they make the structure harder to understand.
 
-[[Название дерева|Отображаемый текст]]
+For working with large trees, Basalt supports:
 
-Каждое дерево имеет собственное название, а переход по ссылке осуществляется мгновенно.
+- Zooming;
+- Collapsing and expanding subtrees.
 
-Такой подход позволяет разбивать очень большие темы на несколько логически независимых деревьев, сохраняя между ними навигацию.
+New nodes can be created directly from the interface:
 
-Поощряется создание большого количества небольших специализированных деревьев вместо одного огромного.
+- Bottom — add or remove a child node;
+- Top — add a new parent node;
+- Right — create or remove a description.
 
-5. Режим обучения
+### 4. Links Between Trees
 
-Basalt заимствует у Anki механизм интервальных повторений.
+Like Obsidian, separate trees can be connected using links.
 
-Во время обучения случайным образом выбирается отдельный узел дерева.
+The familiar syntax is supported:
 
-Пользователь сначала пытается вспомнить содержимое пояснения, после чего последовательно вспоминает содержимое всех непосредственных дочерних узлов.
+```text
+[[Tree Name]]
+```
 
-При этом рекурсивное воспроизведение всего дерева не требуется — проверяются только прямые потомки выбранного узла.
+or
 
-Поддерживается обратный режим обучения.
+```text
+[[Tree Name|Displayed Text]]
+```
 
-В этом режиме сначала отображается пояснение узла, а пользователь должен вспомнить соответствующий вопрос или название.
+Each tree has its own unique name, and navigation through links is instantaneous.
 
-Такая же механика применяется и к дочерним узлам.
+This approach makes it possible to split very large topics into multiple logically independent trees while preserving seamless navigation between them.
 
-После завершения повторения пользователь оценивает качество воспроизведения материала по той же шкале, что используется в Anki.
+Basalt encourages creating many small, specialized trees instead of one enormous one.
 
-На основании этих оценок приложение рассчитывает интервалы следующих повторений.
+### 5. Learning Mode
 
-6. Хранение данных
+Basalt adopts Anki's spaced repetition system.
 
-Внутреннее представление базы знаний хранится в формате JSON.
+During a learning session, a random node is selected. The user first recalls the node's description and then attempts to recall all of its immediate child nodes. Recursive reproduction of the entire subtree is **not** required—only the direct children of the selected node are tested.
 
-Поддерживаются:
+A **reverse learning mode** is also available, where the description is shown first and the user must recall the corresponding question or title.
 
-экспорт и импорт полной базы знаний;
-экспорт и импорт отдельных деревьев;
-вставка дерева непосредственно через интерфейс приложения.
+The same mechanics apply recursively as new nodes are selected for review.
 
-Для совместимости с другими системами также предусмотрен экспорт деревьев в Markdown, что позволяет использовать накопленную базу знаний в Obsidian и других редакторах Markdown без необходимости ручного переноса информации.
+After each review, the user rates how well they remembered the material using the same grading scale as Anki. Basalt then calculates the intervals before future reviews based on these ratings.
+
+### 6. Data Storage
+
+Internally, the knowledge base is stored in JSON format.
+
+The following operations are supported:
+
+- Export and import of the entire knowledge base;
+- Export and import of individual trees;
+- Direct insertion of trees through the application interface.
+
+For compatibility with other systems, trees can also be exported as Markdown documents, allowing the accumulated knowledge base to be used in Obsidian and other Markdown editors without manual conversion.
+
+---
+
+## Requirements
+
+- Python 3.6 or later
+- PyQt5
+
+---
+
+## Installation
+
+1. Clone the repository (or download the source code):
+
+   ```bash
+   git clone https://github.com/yourusername/basalt.git
+   cd basalt
+   ```
+
+2. Install the dependencies (using a virtual environment is recommended):
+
+   ```bash
+   pip install PyQt5
+   ```
+
+   (If a `requirements.txt` file is available, use `pip install -r requirements.txt`.)
+
+3. Launch the application:
+
+   ```bash
+   python main.py
+   ```
+
+---
+
+## Usage
+
+- **Create a tree** — click **➕ New Tree** in the toolbar.
+- **Add a child node** — select an existing node and click **➕ Child Node**.
+- **Add a parent node** — select a node and click **🔼 Parent Node**.
+- **Edit a title** — double-click the node title or click it and start typing.
+- **Edit a description** — click the **✏️** button in the upper-right corner of the node, enter the text, and save it (the button changes to **💾**).
+- **Follow a link** — click a link such as `[[Tree Name]]` inside a description. The referenced tree will be created automatically if it does not already exist, and then opened.
+- **Customize the layout** — open **⚙️ View Settings** to change node sizes, spacing, or alignment.
+- **Learning mode** — click **🧠 Start Learning** to review nodes scheduled for spaced repetition. After answering, rate your recall quality and the review intervals will be updated automatically.
+- **Export / Import** — use **💾 Export Database** and **📂 Import Database** to save or load the entire knowledge base as JSON.
+
+---
+
+## Project Structure
+
+```text
+basalt/
+├── main.py              # entry point, main window
+├── basalt_canvas.py     # tree rendering (QGraphicsView)
+├── basalt_node.py       # data models (nodes, trees, project, settings, intervals)
+├── learning_mode.py     # learning dialog (spaced repetition)
+├── ui_node.py           # node UI component
+├── ui_settings.py       # view settings dialog
+└── README.md            # this file
+```
+
+---
+
+## Configuration
+
+The **View Settings** dialog allows you to configure:
+
+- Node width and height (in pixels);
+- Horizontal and vertical spacing between nodes;
+- Text alignment inside nodes (left, center, or right).
+
+All changes apply to the current tree and are saved as part of the project.
+
+---
+
+## License
+
+This project is distributed under the **MIT License**.
+
+You are free to use, modify, and distribute the code provided that the original copyright notice is retained.
+
+See the [LICENSE](LICENSE) file for the full license text (if included in the repository).
+
+---
+
+## Contributing
+
+If you find a bug, have an idea for an improvement, or would like to add a new feature, feel free to open an **Issue** or submit a **Pull Request**.
+
+---
+
+**Contact:** pavelsolodukhin@proton.me
+````
+
