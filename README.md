@@ -1,6 +1,4 @@
 <!-- markdownlint-disable MD033 -->
-````md
-<!-- markdownlint-disable MD033 -->
 
 <p align="center">
 
