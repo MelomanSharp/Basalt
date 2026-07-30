@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QLineEdit, QTextEdit, QTextBrowser, QPushButton
 )
 from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from basalt_node import BasaltNode, LayoutSettings
 
 class NodeWidget(QWidget):
@@ -72,9 +72,13 @@ class NodeWidget(QWidget):
         self.note_browser.setHtml(html)
 
     def _on_title_changed(self):
-        if self.node.title != self.title_edit.text():
-            self.node.title = self.title_edit.text()
-            self.canvas.node_changed.emit(self.node.id)
+        new_title = self.title_edit.text()
+        if self.node.title != new_title:
+            self.node.title = new_title
+            node_id = self.node.id
+            canvas = self.canvas
+            QTimer.singleShot(0, lambda: canvas.node_changed.emit(node_id))
+    # ─────────────────────────────────────────────────────────────
 
     def _on_link_clicked(self, url):
         self.canvas.link_clicked.emit(url.toString())

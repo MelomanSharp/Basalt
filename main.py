@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QSplitter, QToolBar, QAction, QFileDialog, QMessageBox, QListWidget, 
-    QListWidgetItem, QLabel, QAbstractItemView
+    QListWidgetItem, QLabel, QAbstractItemView, QInputDialog
 )
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
 from PyQt5.QtCore import Qt, QTimer
@@ -70,7 +70,11 @@ class MainWindow(QMainWindow):
         self.tree_list = QListWidget()
         self.tree_list.setFont(QFont("Segoe UI", 10))
         self.tree_list.setSelectionMode(QAbstractItemView.SingleSelection)
+        # ── НОВОЕ: разрешаем переименование двойным кликом ──────
+        self.tree_list.setEditTriggers(QAbstractItemView.DoubleClicked)
+        # ─────────────────────────────────────────────────────────
         self.tree_list.currentRowChanged.connect(self._on_tree_selected)
+        self.tree_list.itemChanged.connect(self._on_tree_renamed)
         sidebar_layout.addWidget(self.tree_list)
         
         self.canvas = BasaltCanvas()
@@ -95,6 +99,12 @@ class MainWindow(QMainWindow):
         self.act_new_tree = QAction("➕ Новое дерево", self)
         self.act_new_tree.triggered.connect(self.add_new_tree)
         toolbar.addAction(self.act_new_tree)
+
+        # ── НОВОЕ: кнопка переименования дерева ─────────────────
+        self.act_rename_tree = QAction("✏️ Переименовать дерево", self)
+        self.act_rename_tree.triggered.connect(self.rename_current_tree)
+        toolbar.addAction(self.act_rename_tree)
+        # ─────────────────────────────────────────────────────────
         
         toolbar.addSeparator()
         
@@ -158,21 +168,64 @@ class MainWindow(QMainWindow):
         self._refresh_tree_list()
         self.auto_layout()
 
+    # ── НОВОЕ: blockSignals, чтобы itemChanged не стрелял
+    #    при программном заполнении списка ────────────────────────
     def _refresh_tree_list(self):
+        self.tree_list.blockSignals(True)
         self.tree_list.clear()
         for tree in self.project.trees.values():
             item = QListWidgetItem(tree.title)
             item.setData(Qt.UserRole, tree.id)
+            item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.tree_list.addItem(item)
+        self.tree_list.blockSignals(False)
+    # ─────────────────────────────────────────────────────────────
 
     def _on_tree_selected(self, row):
         if row < 0: return
         item = self.tree_list.item(row)
+        if not item: return
         tree_id = item.data(Qt.UserRole)
         self.current_tree_id = tree_id
         tree = self.project.trees.get(tree_id)
         if tree:
             self.canvas.set_tree(tree, self.project.settings)
+
+    # ── НОВОЕ: обработка переименования дерева из списка ────────
+    def _on_tree_renamed(self, item: QListWidgetItem):
+        tree_id = item.data(Qt.UserRole)
+        tree = self.project.trees.get(tree_id)
+        if not tree:
+            return
+        new_title = item.text().strip()
+        if new_title:
+            tree.title = new_title
+        else:
+            # Пустое название — откатываем
+            item.setText(tree.title)
+    # ─────────────────────────────────────────────────────────────
+
+    # ── НОВОЕ: переименование через кнопку / диалог ─────────────
+    def rename_current_tree(self):
+        if not self.current_tree_id:
+            QMessageBox.warning(self, "Ошибка", "Сначала выберите дерево.")
+            return
+        tree = self.project.trees.get(self.current_tree_id)
+        if not tree:
+            return
+        new_title, ok = QInputDialog.getText(
+            self, "Переименовать дерево",
+            "Новое название:", text=tree.title
+        )
+        if ok and new_title.strip():
+            tree.title = new_title.strip()
+            self._refresh_tree_list()
+            # Подсветим переименованное дерево
+            for i in range(self.tree_list.count()):
+                if self.tree_list.item(i).data(Qt.UserRole) == tree.id:
+                    self.tree_list.setCurrentRow(i)
+                    break
+    # ─────────────────────────────────────────────────────────────
 
     def _on_node_selected(self, node_id: str):
         pass 
@@ -181,11 +234,23 @@ class MainWindow(QMainWindow):
         tree = self.project.trees.get(self.current_tree_id)
         if tree and node_id in tree.nodes:
             if node_id == tree.root_id:
-                self._refresh_tree_list()
-                for i in range(self.tree_list.count()):
-                    if self.tree_list.item(i).data(Qt.UserRole) == tree.id:
-                        self.tree_list.setCurrentRow(i)
-                        break
+                # ── ФИКС КРАША ──────────────────────────────────
+                # Откладываем обновление списка, чтобы не вызвать
+                # scene.clear() синхронно внутри editingFinished.
+                QTimer.singleShot(0, self._sync_tree_list_after_rename)
+                # ─────────────────────────────────────────────────
+
+    # ── НОВОЕ: безопасная синхронизация списка после rename ─────
+    def _sync_tree_list_after_rename(self):
+        tree = self.project.trees.get(self.current_tree_id)
+        if not tree:
+            return
+        self._refresh_tree_list()
+        for i in range(self.tree_list.count()):
+            if self.tree_list.item(i).data(Qt.UserRole) == tree.id:
+                self.tree_list.setCurrentRow(i)
+                break
+    # ─────────────────────────────────────────────────────────────
 
     def _navigate_to_tree(self, target_title: str):
         """Переход по wiki-ссылке. Если дерева нет - создает его автоматически."""
@@ -201,9 +266,6 @@ class MainWindow(QMainWindow):
             target_tree.layout_tree(self.project.settings)
             self._is_new_tree = True
             
-        # СОХРАНЯЕМ дерево и ОТКЛАДЫВАЕМ навигацию.
-        # Это критически важно, чтобы избежать краша Qt при удалении виджета,
-        # который только что сгенерировал событие клика по ссылке.
         self._pending_tree = target_tree
         QTimer.singleShot(0, self._apply_navigation)
 
@@ -226,7 +288,6 @@ class MainWindow(QMainWindow):
                 self.tree_list.setCurrentRow(i)
                 break
                 
-        # Теперь безопасно перерисовываем сцену
         self.canvas.set_tree(target_tree, self.project.settings)
         self._pending_tree = None
 

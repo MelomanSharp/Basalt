@@ -54,6 +54,22 @@ class BasaltCanvas(QGraphicsView):
         self.node_selected.emit(node_id)
 
     def redraw(self):
+        # ── ФИКС КРАША ──────────────────────────────────────────
+        # Сбрасываем фокус и блокируем сигналы QLineEdit *до*
+        # scene.clear(), иначе деструктор прокси-виджета дёрнет
+        # editingFinished на уже умирающем QLineEdit → segfault.
+        self.scene.setFocusItem(None)
+        for ui_node in self.ui_nodes.values():
+            try:
+                w = ui_node.widget
+                if w is not None:
+                    w.title_edit.blockSignals(True)
+                    if w.note_edit is not None:
+                        w.note_edit.blockSignals(True)
+            except RuntimeError:
+                pass  # обёртка уже уничтожена
+        # ─────────────────────────────────────────────────────────
+
         self.scene.clear()
         self.ui_nodes.clear()
         if not self.tree or not self.tree.nodes: return
