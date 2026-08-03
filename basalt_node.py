@@ -13,11 +13,12 @@ def new_id() -> str:
 @dataclass
 class LayoutSettings:
     """Настройки отображения и выравнивания дерева"""
-    h_spacing: int = 40      # Горизонтальный отступ между узлами
-    v_spacing: int = 60      # Вертикальный отступ между уровнями
-    node_width: int = 260    # Ширина узла
-    node_height: int = 140   # Высота узла
-    text_align: str = "left" # Выравнивание текста: left, center, right
+    h_spacing: int = 40
+    v_spacing: int = 60
+    node_width: int = 260
+    node_height: int = 140
+    text_align: str = "left"
+    max_parents: int = 1
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -26,6 +27,55 @@ class LayoutSettings:
     def from_dict(cls, data: dict[str, Any] | None) -> "LayoutSettings":
         if not data: return cls()
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+@dataclass
+class TreeLearningConfig:
+    """Настройки обучения для одного дерева."""
+    enabled: bool = True
+    mode: str = "random"
+
+    def to_dict(self) -> dict: return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "TreeLearningConfig":
+        return cls(enabled=data.get("enabled", True), mode=data.get("mode", "random"))
+
+
+@dataclass
+class LearningSettings:
+    """Настройки режима обучения в фоне."""
+    interval_minutes: int = 1
+    interval_seconds: int = 0
+    random_order_trees: bool = True
+    tree_configs: dict[str, TreeLearningConfig] = field(default_factory=dict)
+
+    def get_interval_ms(self) -> int:
+        return (self.interval_minutes * 60 + self.interval_seconds) * 1000
+
+    def get_tree_config(self, tree_id: str) -> TreeLearningConfig:
+        if tree_id not in self.tree_configs:
+            self.tree_configs[tree_id] = TreeLearningConfig()
+        return self.tree_configs[tree_id]
+
+    def to_dict(self) -> dict:
+        return {
+            "interval_minutes": self.interval_minutes,
+            "interval_seconds": self.interval_seconds,
+            "random_order_trees": self.random_order_trees,
+            "tree_configs": {k: v.to_dict() for k, v in self.tree_configs.items()},
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "LearningSettings":
+        ls = cls()
+        ls.interval_minutes = data.get("interval_minutes", 1)
+        ls.interval_seconds = data.get("interval_seconds", 0)
+        ls.random_order_trees = data.get("random_order_trees", True)
+        for k, v in data.get("tree_configs", {}).items():
+            ls.tree_configs[k] = TreeLearningConfig.from_dict(v)
+        return ls
+
 
 @dataclass
 class Review:
@@ -51,21 +101,32 @@ class Review:
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "Review":
         data = data or {}
-        return cls(due=str(data.get("due") or date.today().isoformat()),
-                   interval=int(data.get("interval", 0)),
-                   ease=float(data.get("ease", 2.5)),
-                   repetitions=int(data.get("repetitions", 0)))
+        return cls(
+            due=str(data.get("due") or date.today().isoformat()),
+            interval=int(data.get("interval", 0)),
+            ease=float(data.get("ease", 2.5)),
+            repetitions=int(data.get("repetitions", 0)),
+        )
+
 
 @dataclass
 class BasaltNode:
     id: str = field(default_factory=new_id)
     title: str = "Новый узел"
     note: str = ""
-    parent_id: str | None = None
+    parents: list[str] = field(default_factory=list)
     children: list[str] = field(default_factory=list)
     x: float = 0.0
     y: float = 0.0
     review: Review = field(default_factory=Review)
+
+    @property
+    def parent_id(self) -> str | None:
+        return self.parents[0] if self.parents else None
+
+    @parent_id.setter
+    def parent_id(self, value: str | None):
+        self.parents = [value] if value else []
 
     def to_dict(self) -> dict[str, Any]:
         result = asdict(self)
@@ -74,10 +135,22 @@ class BasaltNode:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "BasaltNode":
-        return cls(id=str(data.get("id") or new_id()), title=str(data.get("title", "Новый узел")),
-                   note=str(data.get("note", "")), parent_id=data.get("parent_id"),
-                   children=list(data.get("children", [])), x=float(data.get("x", 0)),
-                   y=float(data.get("y", 0)), review=Review.from_dict(data.get("review")))
+        parents = data.get("parents")
+        if parents is None and "parent_id" in data:
+            parents = [data["parent_id"]] if data["parent_id"] else []
+        if parents is None:
+            parents = []
+        return cls(
+            id=str(data.get("id") or new_id()),
+            title=str(data.get("title", "Новый узел")),
+            note=str(data.get("note", "")),
+            parents=list(parents),
+            children=list(data.get("children", [])),
+            x=float(data.get("x", 0)),
+            y=float(data.get("y", 0)),
+            review=Review.from_dict(data.get("review")),
+        )
+
 
 @dataclass
 class BasaltTree:
@@ -94,8 +167,7 @@ class BasaltTree:
 
     def add_child(self, parent_id: str, title: str = "Новый узел") -> BasaltNode:
         parent = self.nodes[parent_id]
-        # Просто добавляем, координаты потом выровняются алгоритмом
-        node = BasaltNode(title=title, parent_id=parent_id, x=parent.x, y=parent.y + 160)
+        node = BasaltNode(title=title, parents=[parent_id], x=parent.x, y=parent.y + 160)
         self.nodes[node.id] = node
         parent.children.append(node.id)
         return node
@@ -103,69 +175,143 @@ class BasaltTree:
     def add_parent(self, child_id: str, title: str = "Новый родитель") -> BasaltNode:
         child = self.nodes[child_id]
         parent = BasaltNode(title=title, x=child.x, y=child.y - 160)
-        old_parent = child.parent_id
+        old_parents = child.parents.copy()
         parent.children.append(child.id)
-        parent.parent_id = old_parent
+        parent.parents = old_parents
         self.nodes[parent.id] = parent
-        child.parent_id = parent.id
-        if old_parent and old_parent in self.nodes:
-            siblings = self.nodes[old_parent].children
-            siblings[siblings.index(child.id)] = parent.id
-        else:
+        child.parents = [parent.id]
+        for old_p in old_parents:
+            if old_p and old_p in self.nodes:
+                sibs = self.nodes[old_p].children
+                if child.id in sibs:
+                    sibs[sibs.index(child.id)] = parent.id
+        if not parent.parents:
             self.root_id = parent.id
         return parent
+
+    def reparent_node(self, node_id: str, new_parent_id: str) -> bool:
+        if node_id not in self.nodes or new_parent_id not in self.nodes:
+            return False
+        if node_id == new_parent_id:
+            return False
+
+        def is_descendant(ancestor_id, candidate_id, visited=None):
+            if visited is None: visited = set()
+            if candidate_id in visited: return False
+            visited.add(candidate_id)
+            if ancestor_id == candidate_id: return True
+            for c in self.nodes[candidate_id].children:
+                if is_descendant(ancestor_id, c, visited):
+                    return True
+            return False
+
+        if is_descendant(node_id, new_parent_id):
+            return False
+
+        node = self.nodes[node_id]
+        for pid in list(node.parents):
+            if pid in self.nodes and node_id in self.nodes[pid].children:
+                self.nodes[pid].children.remove(node_id)
+
+        new_parent = self.nodes[new_parent_id]
+        if node_id not in new_parent.children:
+            new_parent.children.append(node_id)
+        node.parents = [new_parent_id]
+
+        if self.root_id == node_id:
+            for nid, n in self.nodes.items():
+                if not n.parents:
+                    self.root_id = nid
+                    break
+        return True
 
     def remove_node(self, node_id: str) -> None:
         if node_id not in self.nodes: return
         node = self.nodes[node_id]
-        if node.parent_id and node.parent_id in self.nodes:
-            self.nodes[node.parent_id].children = [i for i in self.nodes[node.parent_id].children if i != node_id]
+        for pid in list(node.parents):
+            if pid in self.nodes and node_id in self.nodes[pid].children:
+                self.nodes[pid].children.remove(node_id)
+
         doomed = []
         def visit(iid):
             doomed.append(iid)
             for cid in self.nodes[iid].children: visit(cid)
         visit(node_id)
         for iid in doomed: self.nodes.pop(iid, None)
-        if self.root_id == node_id: self.root_id = None
+
+        if self.root_id == node_id:
+            self._find_new_root()
+
+    def remove_node_only(self, node_id: str) -> None:
+        if node_id not in self.nodes: return
+        node = self.nodes[node_id]
+        parents = node.parents
+        children = node.children
+
+        for child_id in children:
+            child = self.nodes.get(child_id)
+            if not child: continue
+            if node_id in child.parents:
+                child.parents.remove(node_id)
+            for pid in parents:
+                if pid not in child.parents:
+                    child.parents.append(pid)
+                if pid in self.nodes and child_id not in self.nodes[pid].children:
+                    self.nodes[pid].children.append(child_id)
+
+        for pid in parents:
+            if pid in self.nodes and node_id in self.nodes[pid].children:
+                self.nodes[pid].children.remove(node_id)
+
+        self.nodes.pop(node_id, None)
+        if self.root_id == node_id:
+            self._find_new_root()
+
+    def _find_new_root(self):
+        for nid, n in self.nodes.items():
+            if not n.parents:
+                self.root_id = nid
+                return
+        self.root_id = None
 
     def layout_tree(self, settings: LayoutSettings):
-        """Идеальный алгоритм выравнивания без наложений (Reingold-Tilford style)"""
         if not self.root_id: return
-        
+
         w = settings.node_width
         h = settings.node_height
         h_gap = settings.h_spacing
         v_gap = settings.v_spacing
 
-        # 1. Считаем точную ширину каждого поддерева
         widths = {}
-        def calc_width(nid):
+        def calc_width(nid, visited=None):
+            if visited is None: visited = set()
+            if nid in visited: return 0
+            visited.add(nid)
             node = self.nodes[nid]
             if not node.children:
                 widths[nid] = w
                 return w
-            # Ширина детей + отступы между ними
-            children_width = sum(calc_width(c) for c in node.children) + h_gap * (len(node.children) - 1)
+            children_width = sum(calc_width(c, visited) for c in node.children) + h_gap * (len(node.children) - 1)
             widths[nid] = max(w, children_width)
             return widths[nid]
 
         calc_width(self.root_id)
 
-        # 2. Расставляем координаты
-        def assign_pos(nid, x, y):
+        def assign_pos(nid, x, y, visited=None):
+            if visited is None: visited = set()
+            if nid in visited: return
+            visited.add(nid)
             node = self.nodes[nid]
-            node_w = widths[nid]
-            # Центрируем сам узел в пределах его поддерева
+            node_w = widths.get(nid, w)
             node.x = x + (node_w - w) / 2
             node.y = y
 
             if node.children:
-                total_children_w = sum(widths[c] for c in node.children) + h_gap * (len(node.children) - 1)
-                # Начинаем рисовать детей так, чтобы они были центрированы под родителем
+                total_children_w = sum(widths.get(c, w) for c in node.children) + h_gap * (len(node.children) - 1)
                 curr_x = x + (node_w - total_children_w) / 2
                 for c in node.children:
-                    assign_pos(c, curr_x, y + h + v_gap)
-                    curr_x += widths[c] + h_gap
+                    assign_pos(c, curr_x, y + h + v_gap, visited)
+                    curr_x += widths.get(c, w) + h_gap
 
         assign_pos(self.root_id, 0, 0)
 
@@ -175,29 +321,39 @@ class BasaltTree:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "BasaltTree":
-        tree = cls(id=str(data.get("id") or new_id()), title=str(data.get("title", "Без названия")), root_id=data.get("root_id"))
+        tree = cls(id=str(data.get("id") or new_id()),
+                   title=str(data.get("title", "Без названия")),
+                   root_id=data.get("root_id"))
         raw_nodes = data.get("nodes", [])
         if isinstance(raw_nodes, dict): raw_nodes = raw_nodes.values()
         tree.nodes = {n.id: n for n in (BasaltNode.from_dict(r) for r in raw_nodes)}
         for n in tree.nodes.values():
             n.children = [c for c in n.children if c in tree.nodes]
-            if n.parent_id in tree.nodes and n.id not in tree.nodes[n.parent_id].children:
-                tree.nodes[n.parent_id].children.append(n.id)
+            n.parents = [p for p in n.parents if p in tree.nodes]
+            for p in n.parents:
+                if n.id not in tree.nodes[p].children:
+                    tree.nodes[p].children.append(n.id)
         if tree.root_id not in tree.nodes:
-            roots = [n.id for n in tree.nodes.values() if not n.parent_id]
+            roots = [n.id for n in tree.nodes.values() if not n.parents]
             tree.root_id = roots[0] if roots else None
         return tree
+
 
 @dataclass
 class BasaltProject:
     trees: dict[str, BasaltTree] = field(default_factory=dict)
     settings: LayoutSettings = field(default_factory=LayoutSettings)
+    learning: LearningSettings = field(default_factory=LearningSettings)
 
     def add_tree(self, title: str = "Новое дерево") -> BasaltTree:
         tree = BasaltTree(title=title)
         tree.create_root(title)
         self.trees[tree.id] = tree
         return tree
+
+    def remove_tree(self, tree_id: str) -> None:
+        self.trees.pop(tree_id, None)
+        self.learning.tree_configs.pop(tree_id, None)
 
     def find_tree_by_title(self, title: str) -> BasaltTree | None:
         for tree in self.trees.values():
@@ -212,10 +368,54 @@ class BasaltProject:
             due.extend([n for n in tree.nodes.values() if n.review.due <= today])
         return due
 
+    def get_due_nodes_for_learning(self) -> list[BasaltNode]:
+        import random
+        today = date.today().isoformat()
+        tree_nodes: list[list[BasaltNode]] = []
+
+        for tree in self.trees.values():
+            config = self.learning.get_tree_config(tree.id)
+            if not config.enabled:
+                continue
+
+            nodes = [n for n in tree.nodes.values() if n.review.due <= today]
+            if not nodes:
+                continue
+
+            if config.mode == "sequential":
+                ordered = []
+                visited = set()
+
+                def dfs(nid):
+                    if nid in visited or nid not in tree.nodes: return
+                    visited.add(nid)
+                    n = tree.nodes[nid]
+                    if n.review.due <= today:
+                        ordered.append(n)
+                    for c in n.children:
+                        dfs(c)
+
+                if tree.root_id:
+                    dfs(tree.root_id)
+                nodes = ordered
+            else:
+                random.shuffle(nodes)
+
+            tree_nodes.append(nodes)
+
+        if self.learning.random_order_trees:
+            random.shuffle(tree_nodes)
+
+        result = []
+        for tn in tree_nodes:
+            result.extend(tn)
+        return result
+
     def to_json(self) -> str:
         return json.dumps({
             "trees": [t.to_dict() for t in self.trees.values()],
-            "settings": self.settings.to_dict()
+            "settings": self.settings.to_dict(),
+            "learning": self.learning.to_dict(),
         }, indent=4, ensure_ascii=False)
 
     @classmethod
@@ -223,6 +423,7 @@ class BasaltProject:
         data = json.loads(json_str)
         proj = cls()
         proj.settings = LayoutSettings.from_dict(data.get("settings"))
+        proj.learning = LearningSettings.from_dict(data.get("learning", {}))
         for t_data in data.get("trees", []):
             tree = BasaltTree.from_dict(t_data)
             proj.trees[tree.id] = tree
