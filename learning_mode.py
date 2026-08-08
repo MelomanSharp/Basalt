@@ -77,11 +77,23 @@ class NotificationDialog(QDialog):
     """Компактное окно с карточкой, всегда поверх других окон."""
 
     def __init__(self, node: BasaltNode, project: BasaltProject, parent=None):
-        super().__init__(parent)
+        # 1. Передаём None вместо parent. Это делает окно полностью независимым
+        # на уровне ОС, поэтому оно не будет сворачиваться вместе с главным окном.
+        super().__init__(None) 
+        
         self.node = node
         self.project = project
         self.setWindowTitle("Basalt — Повторение")
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint | Qt.Tool)
+        
+        # 2. Убираем Qt.Tool и явно задаём флаги независимого окна.
+        # Qt.WindowStaysOnTopHint оставляет карточку поверх всех окон.
+        self.setWindowFlags(
+            Qt.Window | 
+            Qt.WindowStaysOnTopHint | 
+            Qt.WindowTitleHint | 
+            Qt.WindowCloseButtonHint
+        )
+        
         self.resize(500, 350)
         self._setup_ui()
         self._show_front()
