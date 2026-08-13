@@ -1,15 +1,17 @@
 import sys
 import os
+import json
+import re
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QToolBar, QAction, QFileDialog, QMessageBox, QListWidget,
     QListWidgetItem, QLabel, QAbstractItemView, QInputDialog, QDialog,
-    QRadioButton, QButtonGroup, QPushButton
+    QRadioButton, QButtonGroup, QPushButton, QTextEdit
 )
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
 from PyQt5.QtCore import Qt, QTimer, QSettings
 
-from basalt_node import BasaltProject
+from basalt_node import BasaltProject, BasaltTree, new_id
 from basalt_canvas import BasaltCanvas
 from learning_mode import LearningManager, LearningSettingsDialog
 from ui_settings import SettingsDialog
@@ -149,6 +151,11 @@ class MainWindow(QMainWindow):
         self.act_new_tree = QAction("➕ Новое дерево", self)
         self.act_new_tree.triggered.connect(self.add_new_tree)
         toolbar.addAction(self.act_new_tree)
+
+        # ── НОВОЕ: Импорт дерева ─────────────────────────────
+        self.act_import_tree = QAction("📥 Импорт дерева", self)
+        self.act_import_tree.triggered.connect(self.import_tree)
+        toolbar.addAction(self.act_import_tree)
 
         self.act_rename_tree = QAction("✏️ Переименовать", self)
         self.act_rename_tree.triggered.connect(self.rename_current_tree)
@@ -413,6 +420,49 @@ class MainWindow(QMainWindow):
             self._mark_dirty()
 
     # ══════════════════════════════════════════════════════════
+    #  NEW: TREE JSON IMPORT
+    # ══════════════════════════════════════════════════════════
+
+    def import_tree(self):
+        dlg = ImportTreeDialog(self)
+        if dlg.exec_() == QDialog.Accepted and dlg.imported_tree:
+            tree = dlg.imported_tree
+            
+            # Проверка на конфликт имен (важно для работы ссылок [[...]])
+            existing = self.project.find_tree_by_title(tree.title)
+            if existing:
+                reply = QMessageBox.question(
+                    self, "Дерево с таким именем уже существует",
+                    f"Дерево с названием «{tree.title}» уже есть в базе.\n"
+                    "Ссылки вида [[...]] могут работать некорректно.\n"
+                    "Всё равно добавить?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply != QMessageBox.Yes:
+                    return
+
+            self.project.trees[tree.id] = tree
+            # Инициализируем конфиг обучения для нового дерева
+            self.project.learning.get_tree_config(tree.id)
+            
+            self._refresh_tree_list()
+            for i in range(self.tree_list.count()):
+                if self.tree_list.item(i).data(Qt.UserRole) == tree.id:
+                    self.tree_list.setCurrentRow(i)
+                    break
+                    
+            # Уважайем статичное позиционирование (фишка Basalt):
+            # Если пользователь задал координаты в JSON — сохраняем их.
+            # Если нет (все узлы в 0,0) — делаем автоматическое выравнивание.
+            has_custom_layout = any(n.x != 0.0 or n.y != 0.0 for n in tree.nodes.values())
+            if not has_custom_layout:
+                tree.layout_tree(self.project.settings)
+                
+            self.canvas.set_tree(tree, self.project.settings)
+            self._mark_dirty()
+            QMessageBox.information(self, "Успех", f"Дерево «{tree.title}» успешно импортировано!")
+
+    # ══════════════════════════════════════════════════════════
     #  Узлы
     # ══════════════════════════════════════════════════════════
 
@@ -573,6 +623,180 @@ class MainWindow(QMainWindow):
         self.act_learn.setVisible(True)
         self.act_learn_stop.setVisible(False)
         QMessageBox.information(self, "Обучение остановлено", "Фоновый режим остановлен.")
+
+
+# ══════════════════════════════════════════════════════════════
+#  ADDITION FUNCTIONS AND CLASSES FOR IMPORT
+# ══════════════════════════════════════════════════════════════
+
+def remove_json_comments(json_str: str) -> str:
+    """Удаляет однострочные (//) и многострочные (/* */) комментарии из JSON,
+    сохраняя при этом строковые значения. Также убирает висячие запятые."""
+    # 1. Удаляем комментарии вне строк
+    pattern = r'("(?:\\.|[^"\\])*")|//.*|/\*[\s\S]*?\*/'
+    def replacer(match):
+        if match.group(1):
+            return match.group(1)
+        return ' '
+    clean = re.sub(pattern, replacer, json_str)
+    # 2. Убираем висячие запятые перед ] или }, так как стандартный JSON их не поддерживает
+    clean = re.sub(r',(\s*[\]}])', r'\1', clean)
+    return clean
+
+
+class ImportTreeDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Импорт дерева из JSON")
+        self.resize(750, 650)
+        self.imported_tree = None
+        self._setup_ui()
+
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+
+        lbl = QLabel("Вставьте JSON-код дерева ниже. Вы можете использовать шаблон в качестве основы.\n"
+                     "Поддерживаются комментарии (// и /* */), а также висячие запятые — они будут автоматически очищены.")
+        lbl.setWordWrap(True)
+        layout.addWidget(lbl)
+
+        self.text_edit = QTextEdit()
+        self.text_edit.setFont(QFont("Consolas", 10))
+        self.text_edit.setPlainText(self._get_template())
+        layout.addWidget(self.text_edit)
+
+        self.error_lbl = QLabel("")
+        self.error_lbl.setStyleSheet("color: red; font-weight: bold;")
+        self.error_lbl.setWordWrap(True)
+        layout.addWidget(self.error_lbl)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        
+        self.btn_import = QPushButton("Добавить дерево")
+        self.btn_import.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.btn_import.setStyleSheet(
+            "background-color: #10b981; color: white; padding: 10px; border-radius: 4px;"
+        )
+        self.btn_import.clicked.connect(self._try_import)
+        btn_layout.addWidget(self.btn_import)
+
+        btn_cancel = QPushButton("Отмена")
+        btn_cancel.setStyleSheet("padding: 10px;")
+        btn_cancel.clicked.connect(self.reject)
+        btn_layout.addWidget(btn_cancel)
+
+        layout.addLayout(btn_layout)
+
+    def _get_template(self):
+        return """{
+    // Название вашего дерева
+    "title": "Название нового дерева",
+    
+    // ID корневого узла (должен совпадать с одним из id в списке nodes)
+    "root_id": "node_1",
+    
+    /* 
+       Список всех узлов дерева.
+       Каждый узел должен иметь уникальный id.
+       parents и children — это массивы id связанных узлов.
+    */
+    "nodes": [
+        {
+            "id": "node_1",
+            "title": "Главный вопрос или концепция",
+            "note": "Ответ или подробное описание.",
+            "parents": [],
+            "children": ["node_2"],
+            "x": 400, // Координата X (можно не указывать)
+            "y": 50   // Координата Y
+        },
+        {
+            "id": "node_2",
+            "title": "Уточняющий вопрос",
+            "note": "Детали, которые развивают тему.",
+            "parents": ["node_1"],
+            "children": [],
+        }
+    ]
+}"""
+
+    def _try_import(self):
+        text = self.text_edit.toPlainText().strip()
+        if not text:
+            self.error_lbl.setText("Поле ввода пустое.")
+            return
+
+        clean_text = remove_json_comments(text)
+        
+        try:
+            data = json.loads(clean_text)
+        except json.JSONDecodeError as e:
+            self.error_lbl.setText(f"Ошибка синтаксиса JSON: {e.msg} (строка {e.lineno}, колонка {e.colno}).")
+            return
+
+        is_valid, err_msg = self._validate(data)
+        if not is_valid:
+            self.error_lbl.setText(f"Ошибка структуры: {err_msg}")
+            return
+
+        try:
+            tree = BasaltTree.from_dict(data)
+            # generate a new id for the tree to avoid confclits
+            # with existing trees in database
+            tree.id = new_id() 
+            self.imported_tree = tree
+            self.accept()
+        except Exception as e:
+            self.error_lbl.setText(f"Непредвиденная ошибка при создании дерева: {e}")
+
+    def _validate(self, data):
+        if not isinstance(data, dict):
+            return False, "Ожидается JSON-объект (словарь) в корне."
+        
+        if "title" not in data or not isinstance(data.get("title"), str):
+            return False, "Отсутствует или некорректно поле 'title' (должно быть строкой)."
+            
+        if "nodes" not in data:
+            return False, "Отсутствует поле 'nodes'."
+            
+        nodes_data = data["nodes"]
+        if isinstance(nodes_data, dict):
+            nodes_list = list(nodes_data.values())
+        elif isinstance(nodes_data, list):
+            nodes_list = nodes_data
+        else:
+            return False, "Поле 'nodes' должно быть списком или словарем."
+            
+        if not nodes_list:
+            return False, "Список узлов 'nodes' пуст."
+            
+        node_ids = set()
+        for n in nodes_list:
+            if not isinstance(n, dict):
+                return False, "Каждый узел в 'nodes' должен быть объектом."
+            if "id" not in n:
+                return False, "У одного из узлов отсутствует поле 'id'."
+            node_ids.add(str(n["id"]))
+            
+        for n in nodes_list:
+            for p in n.get("parents", []):
+                if str(p) not in node_ids:
+                    return False, f"Узел '{n.get('id')}' ссылается на несуществующего родителя '{p}'."
+            for c in n.get("children", []):
+                if str(c) not in node_ids:
+                    return False, f"Узел '{n.get('id')}' ссылается на несуществующего потомка '{c}'."
+                    
+        root_id = data.get("root_id")
+        if root_id and str(root_id) not in node_ids:
+            return False, f"Указанный root_id '{root_id}' не найден среди узлов."
+            
+        if not root_id:
+            has_root = any(not n.get("parents") for n in nodes_list)
+            if not has_root:
+                return False, "Не указан root_id, и нет ни одного узла без родителей."
+                
+        return True, ""
 
 
 # ══════════════════════════════════════════════════════════════
