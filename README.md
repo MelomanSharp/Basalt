@@ -2,7 +2,7 @@
 
 <p align="center">
 
-  <img src="https://img.shields.io/badge/Python-3.6%2B-blue.svg" alt="Python Version">
+  <img src="https://img.shields.io/badge/python-3.8%2B%20(recommended%203.11)-blue" alt="Python Version">
 
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT">
 
@@ -118,7 +118,7 @@ For compatibility with other systems, trees can also be exported as Markdown doc
 
 ## Requirements
 
-- Python 3.6 or later
+- Python 3.8 at least, Python 3.11 recommended
 - PyQt5
 
 ---
@@ -135,10 +135,8 @@ For compatibility with other systems, trees can also be exported as Markdown doc
 2. Install the dependencies (using a virtual environment is recommended):
 
    ```bash
-   pip install PyQt5
+   pip install -r requirements.txt
    ```
-
-   (If a `requirements.txt` file is available, use `pip install -r requirements.txt`.)
 
 3. Launch the application:
 

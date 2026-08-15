@@ -44,13 +44,13 @@ class MainWindow(QMainWindow):
         self.resize(1400, 850)
         self.setWindowIcon(create_app_icon())
 
-        # ── Состояние сохранения ───────────────────────────────
+        # ── State of Save ───────────────────────────────
         self.qsettings = QSettings("Basalt", "Basalt")
         self.current_file_path: str | None = None
         self._dirty = False
         self._autosave_pending = False
 
-        # ── Попытка загрузить последний открытый файл ─────────
+        # ── Attempt to load last saved file ─────────
         last_file = self.qsettings.value("last_file", None)
         if last_file and os.path.isfile(last_file):
             try:
@@ -206,7 +206,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(self.act_learn_stop)
 
     # ══════════════════════════════════════════════════════════
-    #  Заголовок окна
+    #  Window Title
     # ══════════════════════════════════════════════════════════
 
     def _update_title(self):
@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"Basalt - {name}{dirty}")
 
     # ══════════════════════════════════════════════════════════
-    #  Сохранение / загрузка
+    #  Save / Load
     # ══════════════════════════════════════════════════════════
 
     def _mark_dirty(self):
@@ -345,7 +345,7 @@ class MainWindow(QMainWindow):
         )
 
     # ══════════════════════════════════════════════════════════
-    #  Список деревьев
+    #  TreeList
     # ══════════════════════════════════════════════════════════
 
     def _refresh_tree_list(self):
@@ -601,7 +601,7 @@ class MainWindow(QMainWindow):
             self.auto_layout()
 
     # ══════════════════════════════════════════════════════════
-    #  Обучение
+    #  Learning Mode
     # ══════════════════════════════════════════════════════════
 
     def start_learning(self):
@@ -632,14 +632,14 @@ class MainWindow(QMainWindow):
 def remove_json_comments(json_str: str) -> str:
     """Удаляет однострочные (//) и многострочные (/* */) комментарии из JSON,
     сохраняя при этом строковые значения. Также убирает висячие запятые."""
-    # 1. Удаляем комментарии вне строк
+    # 1. delete comments outside of lines
     pattern = r'("(?:\\.|[^"\\])*")|//.*|/\*[\s\S]*?\*/'
     def replacer(match):
         if match.group(1):
             return match.group(1)
         return ' '
     clean = re.sub(pattern, replacer, json_str)
-    # 2. Убираем висячие запятые перед ] или }, так как стандартный JSON их не поддерживает
+    # 2. Remove trailing commas before ] or }, as standard JSON doesen't support them
     clean = re.sub(r',(\s*[\]}])', r'\1', clean)
     return clean
 
@@ -800,7 +800,7 @@ class ImportTreeDialog(QDialog):
 
 
 # ══════════════════════════════════════════════════════════════
-#  ДИАЛОГ ВЫБОРА РОДИТЕЛЬСКОГО УЗЛА (без изменений)
+#  parent node selection dialog
 # ══════════════════════════════════════════════════════════════
 
 class AddParentDialog(QDialog):
