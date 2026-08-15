@@ -114,6 +114,9 @@ class MainWindow(QMainWindow):
         self.canvas.node_selected.connect(self._on_node_selected)
         self.canvas.node_changed.connect(self._on_node_changed)
         self.canvas.link_clicked.connect(self._navigate_to_tree)
+        self.canvas.add_child_requested.connect(self.add_child_node)
+        self.canvas.add_parent_requested.connect(self.add_parent_node)
+        self.canvas.delete_node_requested.connect(self.delete_node)
 
         self.splitter.addWidget(sidebar_widget)
         self.splitter.addWidget(self.canvas)
@@ -168,18 +171,6 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
 
         # ── Узлы ─────────────────────────────────────────────
-        self.act_add_child = QAction("➕ Дочерний", self)
-        self.act_add_child.triggered.connect(self.add_child_node)
-        toolbar.addAction(self.act_add_child)
-
-        self.act_add_parent = QAction("🔼 Родительский", self)
-        self.act_add_parent.triggered.connect(self.add_parent_node)
-        toolbar.addAction(self.act_add_parent)
-
-        self.act_delete = QAction("❌ Удалить узел", self)
-        self.act_delete.triggered.connect(self.delete_node)
-        toolbar.addAction(self.act_delete)
-
         self.act_layout = QAction("📐 Выровнять", self)
         self.act_layout.triggered.connect(self.auto_layout)
         toolbar.addAction(self.act_layout)
@@ -520,33 +511,68 @@ class MainWindow(QMainWindow):
         self.tree_list.setCurrentRow(self.tree_list.count() - 1)
         self._mark_dirty()
 
-    def add_child_node(self):
-        if not self.canvas.selected_id:
+    def _get_tree_for_node(self, node_id: str):
+        """Находит дерево, которому принадлежит узел, и синхронизирует current_tree_id."""
+        if self.current_tree_id and self.current_tree_id in self.project.trees:
+            tree = self.project.trees[self.current_tree_id]
+            if node_id in tree.nodes:
+                return tree
+        
+        # Fallback: ищем узел во всех деревьях
+        for tree in self.project.trees.values():
+            if node_id in tree.nodes:
+                self.current_tree_id = tree.id
+                # Синхронизируем выделение в списке деревьев слева
+                for i in range(self.tree_list.count()):
+                    if self.tree_list.item(i).data(Qt.UserRole) == tree.id:
+                        self.tree_list.blockSignals(True)
+                        self.tree_list.setCurrentRow(i)
+                        self.tree_list.blockSignals(False)
+                        break
+                return tree
+        return None
+
+
+    def add_child_node(self, node_id=None):
+        target_id = node_id or self.canvas.selected_id
+        if not target_id:
             QMessageBox.warning(self, "Ошибка", "Сначала выберите узел.")
             return
-        tree = self.project.trees[self.current_tree_id]
-        new_node = tree.add_child(self.canvas.selected_id, "Новый дочерний узел")
+            
+        tree = self._get_tree_for_node(target_id)
+        if not tree:
+            QMessageBox.warning(self, "Ошибка", "Узел не найден ни в одном дереве.")
+            return
+
+        new_node = tree.add_child(target_id, "Новый дочерний узел")
         tree.layout_tree(self.project.settings)
         self.canvas.set_tree(tree, self.project.settings)
         self.canvas.select_node(new_node.id)
         self._mark_dirty()
 
-    def add_parent_node(self):
-        if not self.canvas.selected_id:
+    
+    def add_parent_node(self, node_id=None):
+        target_id = node_id or self.canvas.selected_id
+        if not target_id:
             QMessageBox.warning(self, "Ошибка", "Сначала выберите узел.")
             return
-        dlg = AddParentDialog(self.project, self.current_tree_id, self.canvas.selected_id, self)
+            
+        tree = self._get_tree_for_node(target_id)
+        if not tree:
+            QMessageBox.warning(self, "Ошибка", "Узел не найден ни в одном дереве.")
+            return
+
+        dlg = AddParentDialog(self.project, tree.id, target_id, self)
         if dlg.exec_() == QDialog.Accepted:
-            tree = self.project.trees[self.current_tree_id]
             if dlg.choice == "new":
-                new_node = tree.add_parent(self.canvas.selected_id, "Новый родитель")
+                new_node = tree.add_parent(target_id, "Новый родитель")
                 tree.layout_tree(self.project.settings)
                 self.canvas.set_tree(tree, self.project.settings)
                 self.canvas.select_node(new_node.id)
                 self._mark_dirty()
             elif dlg.choice == "existing":
-                target_id = dlg.selected_node_id
-                if tree.reparent_node(self.canvas.selected_id, target_id):
+                selected_target_id = dlg.selected_node_id
+                if tree.reparent_node(target_id, selected_target_id):
                     tree.layout_tree(self.project.settings)
                     self.canvas.set_tree(tree, self.project.settings)
                     self._mark_dirty()
@@ -557,8 +583,10 @@ class MainWindow(QMainWindow):
                         "потомком выбранного узла (образуется цикл)."
                     )
 
-    def delete_node(self):
-        if not self.canvas.selected_id: return
+    
+    def delete_node(self, node_id=None):
+        target_id = node_id or self.canvas.selected_id
+        if not target_id: return
 
         msg = QMessageBox(self)
         msg.setWindowTitle("Удаление узла")
@@ -576,11 +604,13 @@ class MainWindow(QMainWindow):
         clicked = msg.clickedButton()
         if clicked == msg.button(QMessageBox.Cancel): return
 
-        tree = self.project.trees[self.current_tree_id]
+        tree = self._get_tree_for_node(target_id)
+        if not tree: return
+
         if clicked == btn_only:
-            tree.remove_node_only(self.canvas.selected_id)
+            tree.remove_node_only(target_id)
         else:
-            tree.remove_node(self.canvas.selected_id)
+            tree.remove_node(target_id)
 
         self.canvas.selected_id = None
         tree.layout_tree(self.project.settings)

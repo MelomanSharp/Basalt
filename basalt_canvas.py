@@ -11,6 +11,9 @@ class BasaltCanvas(QGraphicsView):
     node_selected = pyqtSignal(str)
     node_changed = pyqtSignal(str)
     link_clicked = pyqtSignal(str)
+    add_child_requested = pyqtSignal(str)
+    add_parent_requested = pyqtSignal(str)
+    delete_node_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)

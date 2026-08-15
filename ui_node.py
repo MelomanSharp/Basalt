@@ -2,8 +2,8 @@
 
 import re
 from PyQt5.QtWidgets import (
-    QGraphicsProxyWidget, QWidget, QVBoxLayout,
-    QLineEdit, QTextEdit, QTextBrowser, QStackedWidget, QFrame
+    QGraphicsProxyWidget, QWidget, QVBoxLayout, QHBoxLayout,
+    QLineEdit, QTextEdit, QTextBrowser, QStackedWidget, QFrame, QPushButton
 )
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
@@ -132,8 +132,70 @@ class NodeWidget(QWidget):
         self.note_stack.addWidget(self.note_edit)
         self.note_stack.setContentsMargins(0, 0, 0, 0)
         
+        # ── Node Action Buttons ─────────────────────────────────
+        actions_layout = QHBoxLayout()
+        actions_layout.setContentsMargins(0, 5, 0, 0)
+        actions_layout.setSpacing(8)
+
+        btn_parent = QPushButton("🔼 Родительский")
+        btn_parent.setCursor(Qt.PointingHandCursor)
+        btn_parent.setStyleSheet("""
+            QPushButton {
+                color: #3772d6; background: transparent; border: 1px solid transparent;
+                padding: 2px 6px; font-size: 10px; border-radius: 4px;
+            }
+            QPushButton:hover { background: #e8f0ff; border: 1px solid #93c5fd; }
+        """)
+        
+        btn_child = QPushButton("➕ Дочерний")
+        btn_child.setCursor(Qt.PointingHandCursor)
+        btn_child.setStyleSheet("""
+            QPushButton {
+                color: #10b981; background: transparent; border: 1px solid transparent;
+                padding: 2px 6px; font-size: 10px; border-radius: 4px;
+            }
+            QPushButton:hover { background: #dcfce7; border: 1px solid #86efac; }
+        """)
+
+        btn_delete = QPushButton("❌ Удалить")
+        btn_delete.setCursor(Qt.PointingHandCursor)
+        btn_delete.setStyleSheet("""
+            QPushButton {
+                color: #e04f5f; background: transparent; border: 1px solid transparent;
+                padding: 2px 6px; font-size: 10px; border-radius: 4px;
+            }
+            QPushButton:hover { background: #ffe4e6; border: 1px solid #fca5a5; }
+        """)
+
+        btn_parent.clicked.connect(self._on_add_parent)
+        btn_child.clicked.connect(self._on_add_child)
+        btn_delete.clicked.connect(self._on_delete)
+
+        actions_layout.addStretch()
+        actions_layout.addWidget(btn_parent)
+        actions_layout.addWidget(btn_child)
+        actions_layout.addWidget(btn_delete)
+        
         layout.addWidget(self.title_edit)
         layout.addWidget(self.note_stack, 1) # 1 = занимает всё оставшееся место
+        layout.addLayout(actions_layout)
+
+    def _on_add_child(self):
+        self.canvas.select_node(self.node.id)
+        node_id = self.node.id
+        # delay before the next tick of even loop to avoid crash
+        # because of widget destroying during click handle
+        QTimer.singleShot(0, lambda: self.canvas.add_child_requested.emit(node_id))
+
+    def _on_add_parent(self):
+        self.canvas.select_node(self.node.id)
+        node_id = self.node.id
+        QTimer.singleShot(0, lambda: self.canvas.add_parent_requested.emit(node_id))
+
+    def _on_delete(self):
+        self.canvas.select_node(self.node.id)
+        node_id = self.node.id
+        QTimer.singleShot(0, lambda: self.canvas.delete_node_requested.emit(node_id))
 
     def _update_note_display(self):
         text = self.node.note
