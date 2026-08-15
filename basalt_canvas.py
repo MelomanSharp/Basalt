@@ -47,6 +47,8 @@ class BasaltCanvas(QGraphicsView):
         old_id = self.selected_id
         self.selected_id = node_id
 
+        self.scene.setFocusItem(None) # now we change focus from any widget to make focusOutEvent work and our description was saved
+
         if old_id and old_id in self.ui_nodes:
             self.ui_nodes[old_id].set_selected(False)
         if node_id and node_id in self.ui_nodes:

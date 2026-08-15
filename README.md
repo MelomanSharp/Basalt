@@ -128,7 +128,7 @@ For compatibility with other systems, trees can also be exported as Markdown doc
 1. Clone the repository (or download the source code):
 
    ```bash
-   git clone https://github.com/yourusername/basalt.git
+   git clone https://github.com/MelomanSharp/Basalt
    cd basalt
    ```
 
