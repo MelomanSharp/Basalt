@@ -956,8 +956,22 @@ class AddParentDialog(QDialog):
 
 
 if __name__ == "__main__":
+    import sys
+    import ctypes
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+
+    if sys.platform == "win32":
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "MelomanSharp.Basalt.1.0"
+            )
+        except Exception:
+            pass  
+
+    app.setWindowIcon(create_app_icon())
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
