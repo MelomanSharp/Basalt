@@ -8,10 +8,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from basalt_node import BasaltNode, LayoutSettings
+from i18n import tr
 
 
 class NoteBrowser(QTextBrowser):
-    """Режим чтения. Умеет отличать клик по ссылке от клика по тексту."""
+    """Read mode. Can distinguish between link clicks and text clicks."""
     edit_requested = pyqtSignal()
 
     def __init__(self, parent=None):
@@ -32,10 +33,10 @@ class NoteBrowser(QTextBrowser):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            # Проверяем, попал ли клик по HTML-ссылке
+            # Check if click hit an HTML link
             anchor = self.anchorAt(event.pos())
             if not anchor:
-                # Клик по тексту/фону -> запрашиваем переход в режим редактирования
+                # Click on text/background -> request edit mode
                 self.edit_requested.emit()
                 event.accept()
                 return
@@ -43,7 +44,7 @@ class NoteBrowser(QTextBrowser):
 
 
 class NoteEditor(QTextEdit):
-    """Режим редактирования."""
+    """Edit mode."""
     editing_finished = pyqtSignal()
 
     def __init__(self, parent=None):
@@ -68,7 +69,7 @@ class NoteEditor(QTextEdit):
         self.editing_finished.emit()
 
     def keyPressEvent(self, event):
-        # Выход из режима редактирования по Esc или Ctrl+Enter
+        # Exit edit mode on Esc or Ctrl+Enter
         if event.key() == Qt.Key_Escape:
             self.clearFocus()
             event.accept()
@@ -93,12 +94,12 @@ class NodeWidget(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(4)
         
-        # Определяем выравнивание
+        # Determine alignment
         if settings.text_align == "center": align = Qt.AlignCenter
         elif settings.text_align == "right": align = Qt.AlignRight
         else: align = Qt.AlignLeft
         
-        # Заголовок
+        # Title
         self.title_edit = QLineEdit(node.title)
         self.title_edit.setFont(QFont("Segoe UI", 10, QFont.Bold))
         self.title_edit.setAlignment(align)
@@ -116,7 +117,7 @@ class NodeWidget(QWidget):
         """)
         self.title_edit.editingFinished.connect(self._on_title_changed)
         
-        # Пояснение (Стек для переключения между чтением и редактурой)
+        # Note (Stack for switching between read and edit modes)
         self.note_browser = NoteBrowser()
         self.note_browser.setAlignment(align)
         self.note_browser.anchorClicked.connect(self._on_link_clicked)
@@ -137,7 +138,7 @@ class NodeWidget(QWidget):
         actions_layout.setContentsMargins(0, 5, 0, 0)
         actions_layout.setSpacing(8)
 
-        btn_parent = QPushButton("🔼 Родительский")
+        btn_parent = QPushButton(tr("parent_btn"))
         btn_parent.setCursor(Qt.PointingHandCursor)
         btn_parent.setStyleSheet("""
             QPushButton {
@@ -147,7 +148,7 @@ class NodeWidget(QWidget):
             QPushButton:hover { background: #e8f0ff; border: 1px solid #93c5fd; }
         """)
         
-        btn_child = QPushButton("➕ Дочерний")
+        btn_child = QPushButton(tr("child_btn"))
         btn_child.setCursor(Qt.PointingHandCursor)
         btn_child.setStyleSheet("""
             QPushButton {
@@ -157,7 +158,7 @@ class NodeWidget(QWidget):
             QPushButton:hover { background: #dcfce7; border: 1px solid #86efac; }
         """)
 
-        btn_delete = QPushButton("❌ Удалить")
+        btn_delete = QPushButton(tr("delete_btn"))
         btn_delete.setCursor(Qt.PointingHandCursor)
         btn_delete.setStyleSheet("""
             QPushButton {
@@ -177,13 +178,13 @@ class NodeWidget(QWidget):
         actions_layout.addWidget(btn_delete)
         
         layout.addWidget(self.title_edit)
-        layout.addWidget(self.note_stack, 1) # 1 = занимает всё оставшееся место
+        layout.addWidget(self.note_stack, 1) # 1 = takes all remaining space
         layout.addLayout(actions_layout)
 
     def _on_add_child(self):
         self.canvas.select_node(self.node.id)
         node_id = self.node.id
-        # delay before the next tick of even loop to avoid crash
+        # delay before the next tick of event loop to avoid crash
         # because of widget destroying during click handle
         QTimer.singleShot(0, lambda: self.canvas.add_child_requested.emit(node_id))
 
@@ -199,13 +200,13 @@ class NodeWidget(QWidget):
 
     def _update_note_display(self):
         text = self.node.note
-        # Превращаем [[Ссылки]] в кликабельные HTML-теги с красивым стилем
+        # Convert [[Links]] into clickable HTML tags with nice styling
         html = re.sub(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]', 
                       lambda m: f'<a href="{m.group(1)}" style="color: #2563eb; text-decoration: underline;">{m.group(2) or m.group(1)}</a>', 
                       text)
         html = html.replace('\n', '<br>')
         if not html.strip():
-            html = "<i style='color: #9ca3af;'>Нет пояснения (кликните, чтобы добавить)</i>"
+            html = tr("no_note_placeholder")
         self.note_browser.setHtml(html)
 
     def _on_title_changed(self):
@@ -223,7 +224,7 @@ class NodeWidget(QWidget):
         self.note_edit.setPlainText(self.node.note)
         self.note_stack.setCurrentWidget(self.note_edit)
         self.note_edit.setFocus()
-        # Ставим курсор в конец текста
+        # Move cursor to the end of the text
         cursor = self.note_edit.textCursor()
         cursor.movePosition(cursor.End)
         self.note_edit.setTextCursor(cursor)

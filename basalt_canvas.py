@@ -89,7 +89,7 @@ class BasaltCanvas(QGraphicsView):
         if self.tree.root_id:
             collect_visible(self.tree.root_id)
 
-        # Рисуем связи (с учётом множественных родителей)
+        # Draw links (accounting for multiple parents)
         drawn_links = set()
         for nid in visible_ids:
             node = self.tree.nodes[nid]
@@ -123,9 +123,9 @@ class BasaltCanvas(QGraphicsView):
         factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
         self.scale(factor, factor)
 
-    # ── НОВОЕ: ЛКМ по пустому месту = панорамирование ─────────
+    # ── NEW: LMB on empty space = panning ─────────
     def _hit_node(self, event: QMouseEvent) -> bool:
-        """Возвращает True, если клик попал по какому-либо узлу."""
+        """Returns True if the click hit any node."""
         scene_pos = self.mapToScene(event.pos())
         item = self.scene.itemAt(scene_pos, self.transform())
         while item:
@@ -137,7 +137,7 @@ class BasaltCanvas(QGraphicsView):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.LeftButton:
             if not self._hit_node(event):
-                # Клик по пустому месту: снимаем выделение и включаем панорамирование
+                # Click on empty space: clear selection and enable panning
                 if self.selected_id:
                     self.select_node(None)
                 self._panning = True

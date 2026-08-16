@@ -6,13 +6,14 @@ from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
 from typing import Any
 from uuid import uuid4
+from i18n import tr
 
 def new_id() -> str:
     return uuid4().hex
 
 @dataclass
 class LayoutSettings:
-    """Настройки отображения и выравнивания дерева"""
+    """Display and tree layout settings"""
     h_spacing: int = 40
     v_spacing: int = 60
     node_width: int = 260
@@ -31,7 +32,7 @@ class LayoutSettings:
 
 @dataclass
 class TreeLearningConfig:
-    """Настройки обучения для одного дерева."""
+    """Learning settings for a single tree."""
     enabled: bool = True
     mode: str = "random"
 
@@ -44,7 +45,7 @@ class TreeLearningConfig:
 
 @dataclass
 class LearningCardSettings:
-    """Настройки внешнего вида карточки обучения."""
+    """Learning card appearance settings."""
     font_family: str = "Segoe UI"
     font_size: int = 12
     card_width: int = 600
@@ -62,7 +63,7 @@ class LearningCardSettings:
 
 @dataclass
 class LearningSettings:
-    """Настройки режима обучения в фоне."""
+    """Background learning mode settings."""
     interval_minutes: int = 1
     interval_seconds: int = 0
     random_order_trees: bool = True
@@ -134,7 +135,8 @@ class Review:
 @dataclass
 class BasaltNode:
     id: str = field(default_factory=new_id)
-    title: str = "Новый узел"
+    # Fallback to translation if created programmatically without title
+    title: str = field(default_factory=lambda: tr("default_node_title"))
     note: str = ""
     parents: list[str] = field(default_factory=list)
     children: list[str] = field(default_factory=list)
@@ -164,7 +166,7 @@ class BasaltNode:
             parents = []
         return cls(
             id=str(data.get("id") or new_id()),
-            title=str(data.get("title", "Новый узел")),
+            title=str(data.get("title", tr("default_node_title"))),
             note=str(data.get("note", "")),
             parents=list(parents),
             children=list(data.get("children", [])),
@@ -177,24 +179,27 @@ class BasaltNode:
 @dataclass
 class BasaltTree:
     id: str = field(default_factory=new_id)
-    title: str = "Новое дерево"
+    title: str = field(default_factory=lambda: tr("default_tree_title"))
     root_id: str | None = None
     nodes: dict[str, BasaltNode] = field(default_factory=dict)
 
-    def create_root(self, title: str = "Главная идея") -> BasaltNode:
+    def create_root(self, title: str | None = None) -> BasaltNode:
+        if title is None: title = tr("default_root_title")
         node = BasaltNode(title=title, x=400, y=50)
         self.nodes[node.id] = node
         self.root_id = node.id
         return node
 
-    def add_child(self, parent_id: str, title: str = "Новый узел") -> BasaltNode:
+    def add_child(self, parent_id: str, title: str | None = None) -> BasaltNode:
+        if title is None: title = tr("default_new_child")
         parent = self.nodes[parent_id]
         node = BasaltNode(title=title, parents=[parent_id], x=parent.x, y=parent.y + 160)
         self.nodes[node.id] = node
         parent.children.append(node.id)
         return node
 
-    def add_parent(self, child_id: str, title: str = "Новый родитель") -> BasaltNode:
+    def add_parent(self, child_id: str, title: str | None = None) -> BasaltNode:
+        if title is None: title = tr("default_new_parent")
         child = self.nodes[child_id]
         parent = BasaltNode(title=title, x=child.x, y=child.y - 160)
         old_parents = child.parents.copy()
@@ -344,7 +349,7 @@ class BasaltTree:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "BasaltTree":
         tree = cls(id=str(data.get("id") or new_id()),
-                   title=str(data.get("title", "Без названия")),
+                   title=str(data.get("title", tr("default_tree_title"))),
                    root_id=data.get("root_id"))
         raw_nodes = data.get("nodes", [])
         if isinstance(raw_nodes, dict): raw_nodes = raw_nodes.values()
@@ -367,9 +372,10 @@ class BasaltProject:
     settings: LayoutSettings = field(default_factory=LayoutSettings)
     learning: LearningSettings = field(default_factory=LearningSettings)
 
-    def add_tree(self, title: str = "Новое дерево") -> BasaltTree:
+    def add_tree(self, title: str | None = None) -> BasaltTree:
+        if title is None: title = tr("default_tree_title")
         tree = BasaltTree(title=title)
-        tree.create_root(title)
+        tree.create_root()
         self.trees[tree.id] = tree
         return tree
 

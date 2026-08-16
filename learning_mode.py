@@ -10,14 +10,15 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer, QObject, pyqtSignal
 from basalt_node import BasaltProject, BasaltNode, BasaltTree, TreeLearningConfig
+from i18n import tr
 
 
 # ═══════════════════════════════════════════════════════════════
-#  ФОНОВЫЙ МЕНЕДЖЕР ОБУЧЕНИЯ
+#  BACKGROUND LEARNING MANAGER
 # ═══════════════════════════════════════════════════════════════
 
 class LearningManager(QObject):
-    """Показывает карточки по таймеру, даже когда приложение свёрнуто."""
+    """Shows cards on a timer, even when the app is minimized."""
     navigate_to_node = pyqtSignal(str, str)
 
     def __init__(self, project: BasaltProject, parent=None):
@@ -61,11 +62,11 @@ class LearningManager(QObject):
 
 
 # ═══════════════════════════════════════════════════════════════
-#  ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ
+#  POPUP NOTIFICATION
 # ═══════════════════════════════════════════════════════════════
 
 class NotificationDialog(QDialog):
-    """Компактное окно с карточкой, всегда поверх других окон."""
+    """Compact card window, always stays on top."""
 
     def __init__(self, node: BasaltNode, tree: BasaltTree, project: BasaltProject, parent=None, manager=None):
         super().__init__(parent) 
@@ -74,9 +75,9 @@ class NotificationDialog(QDialog):
         self.tree = tree
         self.project = project
         self.manager = manager
-        self.tree_title = self.tree.title if self.tree else "Неизвестное дерево"
+        self.tree_title = self.tree.title if self.tree else tr("unknown_tree")
         
-        self.setWindowTitle("Basalt — Повторение")
+        self.setWindowTitle(tr("review_title"))
         
         self.setWindowFlags(
             Qt.Window | 
@@ -85,7 +86,7 @@ class NotificationDialog(QDialog):
             Qt.WindowCloseButtonHint
         )
         
-        # Применяем настройки карточки
+        # Apply card settings
         cs = self.project.learning.card_settings
         self.resize(cs.card_width, cs.card_height)
         font = QFont(cs.font_family, cs.font_size)
@@ -123,13 +124,13 @@ class NotificationDialog(QDialog):
             self.move(100, 100)
 
     def _sync_node(self) -> bool:
-        """Проверяет, существует ли узел до сих пор, и обновляет его."""
+        """Checks if the node still exists and updates it."""
         if self.tree and self.node and self.node.id in self.tree.nodes:
             self.node = self.tree.nodes[self.node.id]
             return True
         else:
             self._clear()
-            lbl = QLabel("⚠️ Этот узел был удален или перемещен во время обучения.")
+            lbl = QLabel(tr("node_deleted_moved"))
             lbl.setStyleSheet("color: #e04f5f; font-weight: bold; margin: 20px;")
             lbl.setAlignment(Qt.AlignCenter)
             self.card_layout.addWidget(lbl)
@@ -142,7 +143,7 @@ class NotificationDialog(QDialog):
     def _setup_ui(self):
         layout = QVBoxLayout(self)
 
-        header = QLabel("🧠 Интервальное повторение")
+        header = QLabel(tr("spaced_repetition"))
         header.setFont(QFont(self.font().family(), self.font().pointSize() + 1, QFont.Bold))
         header.setStyleSheet("color: #3772d6; padding-bottom: 4px;")
         layout.addWidget(header)
@@ -163,8 +164,8 @@ class NotificationDialog(QDialog):
 
         btn_layout = QHBoxLayout()
         
-        self.btn_open_tree = QPushButton("📂 В дереве")
-        self.btn_open_tree.setToolTip("Открыть этот узел в основном окне для редактирования")
+        self.btn_open_tree = QPushButton(tr("in_tree_btn"))
+        self.btn_open_tree.setToolTip(tr("in_tree_tooltip"))
         self.btn_open_tree.setStyleSheet("padding: 8px; background: #64748b; color: white; border-radius: 4px;")
         self.btn_open_tree.clicked.connect(self._open_in_tree)
         btn_layout.addWidget(self.btn_open_tree)
@@ -174,7 +175,7 @@ class NotificationDialog(QDialog):
 
         btn_layout.addStretch()
 
-        self.btn_reveal = QPushButton("Показать ответ (Пробел)")
+        self.btn_reveal = QPushButton(tr("show_answer"))
         self.btn_reveal.setFont(QFont(self.font().family(), self.font().pointSize(), QFont.Bold))
         self.btn_reveal.setStyleSheet(
             "background-color: #3772d6; color: white; padding: 8px 16px; border-radius: 4px;"
@@ -186,8 +187,8 @@ class NotificationDialog(QDialog):
 
         self.grade_layout = QHBoxLayout()
         grades = [
-            ("Снова (1)", 1, "#e04f5f"), ("Тяжело (2)", 2, "#f59e0b"),
-            ("Хорошо (3)", 3, "#10b981"), ("Легко (5)", 5, "#3772d6"),
+            (tr("again_1"), 1, "#e04f5f"), (tr("hard_2"), 2, "#f59e0b"),
+            (tr("good_3"), 3, "#10b981"), (tr("easy_5"), 5, "#3772d6"),
         ]
         for text, grade, color in grades:
             btn = QPushButton(text)
@@ -236,8 +237,8 @@ class NotificationDialog(QDialog):
         lbl.setWordWrap(True)
         self.card_layout.addWidget(lbl)
 
-        note = self.node.note or "<i>(Пояснение отсутствует)</i>"
-        note_lbl = QLabel(f"<b>Пояснение:</b><br>{note}")
+        note = self.node.note or tr("no_explanation")
+        note_lbl = QLabel(f"<b>{tr('explanation')}:</b><br>{note}")
         note_lbl.setWordWrap(True)
         note_lbl.setStyleSheet(
             "background: #f3f4f6; padding: 10px; border-radius: 4px; margin: 8px 0;"
@@ -245,7 +246,7 @@ class NotificationDialog(QDialog):
         self.card_layout.addWidget(note_lbl)
 
         if self.node.children and self.tree:
-            header = QLabel("<b>Дочерние узлы:</b>")
+            header = QLabel(f"<b>{tr('child_nodes')}</b>")
             header.setFont(QFont(self.font().family(), self.font().pointSize(), QFont.Bold))
             self.card_layout.addWidget(header)
 
@@ -294,97 +295,94 @@ class NotificationDialog(QDialog):
 
 
 # ═══════════════════════════════════════════════════════════════
-#  ДИАЛОГ НАСТРОЕК ПЕРЕД ЗАПУСКОМ
+#  PRE-LAUNCH SETTINGS DIALOG
 # ═══════════════════════════════════════════════════════════════
 
 class LearningSettingsDialog(QDialog):
-    """Окно настроек перед запуском фонового обучения."""
+    """Settings window before starting background learning."""
 
     def __init__(self, project: BasaltProject, parent=None):
         super().__init__(parent)
         self.project = project
-        self.setWindowTitle("Настройки режима обучения")
+        self.setWindowTitle(tr("learning_settings_title"))
         self.resize(650, 700)
         self._setup_ui()
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
 
-        # ── Общие настройки ────────────────────────────────────
-        common_group = QGroupBox("Общие настройки")
+        # ── Common Settings ────────────────────────────────────
+        common_group = QGroupBox(tr("common_settings"))
         common_layout = QFormLayout()
 
         interval_layout = QHBoxLayout()
         self.spin_minutes = QSpinBox()
         self.spin_minutes.setRange(0, 60)
         self.spin_minutes.setValue(self.project.learning.interval_minutes)
-        self.spin_minutes.setSuffix(" мин")
+        self.spin_minutes.setSuffix(tr("min_suffix"))
         interval_layout.addWidget(self.spin_minutes)
         
         self.spin_seconds = QSpinBox()
         self.spin_seconds.setRange(0, 59)
         self.spin_seconds.setValue(self.project.learning.interval_seconds)
-        self.spin_seconds.setSuffix(" сек")
+        self.spin_seconds.setSuffix(tr("sec_suffix"))
         interval_layout.addWidget(self.spin_seconds)
         
-        common_layout.addRow("Интервал показов:", interval_layout)
+        common_layout.addRow(tr("show_interval"), interval_layout)
 
-        self.chk_shuffle_trees = QCheckBox("Перемешивать порядок деревьев между собой")
+        self.chk_shuffle_trees = QCheckBox(tr("shuffle_trees"))
         self.chk_shuffle_trees.setChecked(self.project.learning.random_order_trees)
         common_layout.addRow("", self.chk_shuffle_trees)
 
         common_group.setLayout(common_layout)
         layout.addWidget(common_group)
 
-        # ── Настройки карточки ─────────────────────────────────
-        card_group = QGroupBox("Настройки окна карточки")
+        # ── Card Window Settings ─────────────────────────────────
+        card_group = QGroupBox(tr("card_window_settings"))
         card_layout = QFormLayout()
         
         cs = self.project.learning.card_settings
         
         self.font_combo = QFontComboBox()
         self.font_combo.setCurrentFont(QFont(cs.font_family))
-        card_layout.addRow("Шрифт:", self.font_combo)
+        card_layout.addRow(tr("font"), self.font_combo)
         
         self.font_size_spin = QSpinBox()
         self.font_size_spin.setRange(8, 36)
         self.font_size_spin.setValue(cs.font_size)
-        self.font_size_spin.setSuffix(" pt")
-        card_layout.addRow("Размер шрифта:", self.font_size_spin)
+        self.font_size_spin.setSuffix(tr("pt_suffix"))
+        card_layout.addRow(tr("font_size"), self.font_size_spin)
         
         size_layout = QHBoxLayout()
         self.card_width_spin = QSpinBox()
         self.card_width_spin.setRange(300, 1600)
         self.card_width_spin.setValue(cs.card_width)
-        self.card_width_spin.setSuffix(" px")
+        self.card_width_spin.setSuffix(tr("px_suffix"))
         size_layout.addWidget(self.card_width_spin)
         
         self.card_height_spin = QSpinBox()
         self.card_height_spin.setRange(200, 1000)
         self.card_height_spin.setValue(cs.card_height)
-        self.card_height_spin.setSuffix(" px")
+        self.card_height_spin.setSuffix(tr("px_suffix"))
         size_layout.addWidget(self.card_height_spin)
-        card_layout.addRow("Размеры окна:", size_layout)
+        card_layout.addRow(tr("window_size"), size_layout)
         
         self.pos_combo = QComboBox()
-        self.pos_combo.addItems(["По центру", "Снизу справа", "Сверху справа", "Сверху слева"])
+        self.pos_combo.addItems([tr("pos_center"), tr("pos_bottom_right"), tr("pos_top_right"), tr("pos_top_left")])
         pos_map = {"center": 0, "bottom_right": 1, "top_right": 2, "top_left": 3}
         self.pos_combo.setCurrentIndex(pos_map.get(cs.window_position, 0))
-        card_layout.addRow("Позиция на экране:", self.pos_combo)
+        card_layout.addRow(tr("screen_position"), self.pos_combo)
         
-        self.chk_show_children_notes = QCheckBox("Показывать текст дочерних узлов сразу")
+        self.chk_show_children_notes = QCheckBox(tr("show_children_notes"))
         self.chk_show_children_notes.setChecked(cs.show_children_notes)
-        self.chk_show_children_notes.setToolTip(
-            "Если выключено — показываются только заголовки дочерних узлов.\n"
-            "Клик по заголовку открывает карточку этого узла вне очереди."
-        )
+        self.chk_show_children_notes.setToolTip(tr("show_children_notes_tooltip"))
         card_layout.addRow("", self.chk_show_children_notes)
         
         card_group.setLayout(card_layout)
         layout.addWidget(card_group)
 
-        # ── Настройки для каждого дерева ───────────────────────
-        trees_group = QGroupBox("Настройки для каждого дерева отдельно")
+        # ── Tree-specific Settings ───────────────────────
+        trees_group = QGroupBox(tr("tree_specific_settings"))
         trees_layout = QVBoxLayout()
 
         self.tree_list = QListWidget()
@@ -402,24 +400,24 @@ class LearningSettingsDialog(QDialog):
         trees_group.setLayout(trees_layout)
         layout.addWidget(trees_group)
 
-        # ── Кнопки ────────────────────────────────────────────
+        # ── Buttons ────────────────────────────────────────────
         btn_layout = QHBoxLayout()
         
-        btn_test = QPushButton("🧪 Тест карточки")
+        btn_test = QPushButton(tr("test_card"))
         btn_test.setStyleSheet("padding: 10px; background: #f59e0b; color: white; border-radius: 4px;")
         btn_test.clicked.connect(self._test_card)
         btn_layout.addWidget(btn_test)
         
         btn_layout.addStretch()
 
-        btn_start = QPushButton("🚀 Начать обучение")
+        btn_start = QPushButton(tr("start_learning_btn"))
         btn_start.setFont(QFont("Segoe UI", 10, QFont.Bold))
         btn_start.setStyleSheet(
             "background-color: #10b981; color: white; padding: 10px; border-radius: 4px;"
         )
         btn_start.clicked.connect(self.accept)
 
-        btn_cancel = QPushButton("Отмена")
+        btn_cancel = QPushButton(tr("cancel"))
         btn_cancel.setStyleSheet("padding: 10px;")
         btn_cancel.clicked.connect(self.reject)
 
@@ -431,12 +429,8 @@ class LearningSettingsDialog(QDialog):
         due_nodes = self.project.get_due_nodes_for_learning()
         if not due_nodes:
             QMessageBox.warning(
-                self, "Нет карточек",
-                "Нет карточек для повторения.\n\n"
-                "Возможные причины:\n"
-                "• Все карточки уже повторены на сегодня\n"
-                "• Деревья отключены в настройках\n"
-                "• Нет деревьев в проекте"
+                self, tr("no_cards_title"),
+                tr("no_cards_text")
             )
             return
             
@@ -464,7 +458,7 @@ class LearningSettingsDialog(QDialog):
 
 
 class TreeConfigWidget(QWidget):
-    """Строка настроек одного дерева в списке."""
+    """Settings row for a single tree in the list."""
 
     def __init__(self, tree, config: TreeLearningConfig, parent=None):
         super().__init__(parent)
@@ -483,12 +477,9 @@ class TreeConfigWidget(QWidget):
 
         layout.addStretch()
 
-        self.rb_random = QRadioButton("Случайно")
-        self.rb_sequential = QRadioButton("Последовательно")
-        self.rb_sequential.setToolTip(
-            "Сначала основная ветка сверху вниз, затем ответвления. "
-            "Узлы одного дерева показываются подряд."
-        )
+        self.rb_random = QRadioButton(tr("random"))
+        self.rb_sequential = QRadioButton(tr("sequential"))
+        self.rb_sequential.setToolTip(tr("sequential_tooltip"))
         if self.config.mode == "sequential":
             self.rb_sequential.setChecked(True)
         else:

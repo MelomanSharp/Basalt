@@ -8,31 +8,58 @@ from PyQt5.QtWidgets import (
     QListWidgetItem, QLabel, QAbstractItemView, QInputDialog, QDialog,
     QRadioButton, QButtonGroup, QPushButton, QTextEdit
 )
-from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
-from PyQt5.QtCore import Qt, QTimer, QSettings
+from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen, QLinearGradient
+from PyQt5.QtCore import Qt, QTimer, QSettings, QPointF, QRectF
 
 from basalt_node import BasaltProject, BasaltTree, new_id
 from basalt_canvas import BasaltCanvas
 from learning_mode import LearningManager, LearningSettingsDialog
 from ui_settings import SettingsDialog
+from i18n import tr, I18n
 
 
 def create_app_icon() -> QIcon:
-    pixmap = QPixmap(64, 64)
+    """
+    Tries to load icon.ico/icon.png from the app directory.
+    If not found, generates a high-quality programmatic fallback icon.
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    for ext in ["icon.ico", "icon.png", "icon.svg"]:
+        icon_path = os.path.join(base_dir, ext)
+        if os.path.exists(icon_path):
+            icon = QIcon(icon_path)
+            if not icon.isNull():
+                return icon
+
+    # Fallback to high-res programmatic icon
+    pixmap = QPixmap(256, 256)
     pixmap.fill(Qt.transparent)
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.Antialiasing)
-    painter.setBrush(QColor("#2d2d2d"))
+    painter.setRenderHint(QPainter.SmoothPixmapTransform)
+
+    bg_rect = QRectF(10, 10, 236, 236)
     painter.setPen(Qt.NoPen)
-    painter.drawRoundedRect(4, 4, 56, 56, 12, 12)
-    painter.setPen(QPen(QColor("#3772d6"), 3))
-    painter.drawLine(32, 20, 32, 32)
-    painter.drawLine(32, 32, 18, 44)
-    painter.drawLine(32, 32, 46, 44)
-    painter.setBrush(QColor("#3772d6"))
-    painter.drawEllipse(28, 14, 8, 8)
-    painter.drawEllipse(14, 40, 8, 8)
-    painter.drawEllipse(42, 40, 8, 8)
+    
+    # Gradient background (Basalt dark grey to blue)
+    grad = QLinearGradient(0, 0, 256, 256)
+    grad.setColorAt(0, QColor("#2d3748"))
+    grad.setColorAt(1, QColor("#1a202c"))
+    painter.setBrush(grad)
+    painter.drawRoundedRect(bg_rect, 40, 40)
+
+    # Draw a stylized network / tree
+    painter.setPen(QPen(QColor("#63b3ed"), 8, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+    painter.drawLine(128, 60, 128, 120)
+    painter.drawLine(128, 120, 70, 180)
+    painter.drawLine(128, 120, 186, 180)
+    
+    painter.setBrush(QColor("#63b3ed"))
+    painter.drawEllipse(QPointF(128, 60), 16, 16)
+    painter.drawEllipse(QPointF(128, 120), 16, 16)
+    painter.drawEllipse(QPointF(70, 180), 16, 16)
+    painter.drawEllipse(QPointF(186, 180), 16, 16)
+    
     painter.end()
     return QIcon(pixmap)
 
@@ -40,7 +67,6 @@ def create_app_icon() -> QIcon:
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Basalt - Knowledge Tree")
         self.resize(1400, 850)
         self.setWindowIcon(create_app_icon())
 
@@ -68,9 +94,15 @@ class MainWindow(QMainWindow):
 
         self._setup_ui()
         self._setup_toolbar()
+        
+        # Setup I18n AFTER UI is created so _retranslate_ui can access widgets
+        lang = self.qsettings.value("language", "en")
+        I18n.instance().on_language_changed(self._retranslate_ui)
+        I18n.instance().set_language(lang) # Triggers initial translation
+
         self._update_title()
 
-        # Менеджер фонового обучения
+        # Background learning manager
         self.learning_manager = LearningManager(self.project, self)
         self.learning_manager.navigate_to_node.connect(self._navigate_to_node_from_learning)
 
@@ -96,9 +128,9 @@ class MainWindow(QMainWindow):
         sidebar_layout = QVBoxLayout(sidebar_widget)
         sidebar_layout.setContentsMargins(5, 5, 5, 5)
 
-        lbl_trees = QLabel("📚 Мои деревья")
-        lbl_trees.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        sidebar_layout.addWidget(lbl_trees)
+        self.lbl_trees = QLabel(tr("my_trees"))
+        self.lbl_trees.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        sidebar_layout.addWidget(self.lbl_trees)
 
         self.tree_list = QListWidget()
         self.tree_list.setFont(QFont("Segoe UI", 10))
@@ -124,77 +156,101 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.splitter)
 
     def _setup_toolbar(self):
-        toolbar = QToolBar("Главная панель")
+        toolbar = QToolBar("Main Toolbar")
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
 
-        self.act_open = QAction("📂 Открыть...", self)
+        self.act_open = QAction(tr("open"), self)
         self.act_open.triggered.connect(self.open_project)
         toolbar.addAction(self.act_open)
 
-        self.act_save = QAction("💾 Сохранить", self)
+        self.act_save = QAction(tr("save"), self)
         self.act_save.setShortcut("Ctrl+S")
         self.act_save.triggered.connect(self.save_project)
         toolbar.addAction(self.act_save)
 
-        self.act_save_as = QAction("💾 Сохранить как...", self)
+        self.act_save_as = QAction(tr("save_as"), self)
         self.act_save_as.triggered.connect(self.save_project_as)
         toolbar.addAction(self.act_save_as)
 
-        self.act_export = QAction("📤 Экспорт...", self)
+        self.act_export = QAction(tr("export"), self)
         self.act_export.triggered.connect(self.export_project)
         toolbar.addAction(self.act_export)
 
         toolbar.addSeparator()
 
-        self.act_new_tree = QAction("➕ Новое дерево", self)
+        self.act_new_tree = QAction(tr("new_tree"), self)
         self.act_new_tree.triggered.connect(self.add_new_tree)
         toolbar.addAction(self.act_new_tree)
 
-        self.act_import_tree = QAction("📥 Импорт дерева", self)
+        self.act_import_tree = QAction(tr("import_tree"), self)
         self.act_import_tree.triggered.connect(self.import_tree)
         toolbar.addAction(self.act_import_tree)
 
-        self.act_rename_tree = QAction("✏️ Переименовать", self)
+        self.act_rename_tree = QAction(tr("rename_tree"), self)
         self.act_rename_tree.triggered.connect(self.rename_current_tree)
         toolbar.addAction(self.act_rename_tree)
 
-        self.act_delete_tree = QAction("🗑 Удалить дерево", self)
+        self.act_delete_tree = QAction(tr("delete_tree"), self)
         self.act_delete_tree.triggered.connect(self.delete_current_tree)
         toolbar.addAction(self.act_delete_tree)
 
         toolbar.addSeparator()
 
-        self.act_layout = QAction("📐 Выровнять", self)
+        self.act_layout = QAction(tr("auto_layout"), self)
         self.act_layout.triggered.connect(self.auto_layout)
         toolbar.addAction(self.act_layout)
 
         toolbar.addSeparator()
 
-        self.act_settings = QAction("⚙️ Вид", self)
+        self.act_settings = QAction(tr("view_settings"), self)
         self.act_settings.triggered.connect(self.open_settings)
         toolbar.addAction(self.act_settings)
 
         toolbar.addSeparator()
 
-        self.act_learn = QAction("🧠 Начать обучение", self)
+        self.act_learn = QAction(tr("start_learning"), self)
         self.act_learn.setFont(QFont("Segoe UI", 10, QFont.Bold))
         self.act_learn.triggered.connect(self.start_learning)
         toolbar.addAction(self.act_learn)
 
-        self.act_learn_stop = QAction("⏹ Остановить", self)
+        self.act_learn_stop = QAction(tr("stop_learning"), self)
         self.act_learn_stop.setFont(QFont("Segoe UI", 10, QFont.Bold))
         self.act_learn_stop.triggered.connect(self.stop_learning)
         self.act_learn_stop.setVisible(False)
         toolbar.addAction(self.act_learn_stop)
 
+    def _retranslate_ui(self):
+        """Dynamically updates all UI strings when language changes."""
+        self._update_title()
+        self.lbl_trees.setText(tr("my_trees"))
+        
+        self.act_open.setText(tr("open"))
+        self.act_save.setText(tr("save"))
+        self.act_save_as.setText(tr("save_as"))
+        self.act_export.setText(tr("export"))
+        self.act_new_tree.setText(tr("new_tree"))
+        self.act_import_tree.setText(tr("import_tree"))
+        self.act_rename_tree.setText(tr("rename_tree"))
+        self.act_delete_tree.setText(tr("delete_tree"))
+        self.act_layout.setText(tr("auto_layout"))
+        self.act_settings.setText(tr("view_settings"))
+        self.act_learn.setText(tr("start_learning"))
+        self.act_learn_stop.setText(tr("stop_learning"))
+        
+        self.qsettings.setValue("language", I18n.instance().get_language())
+        
+        # Close learning dialog if open, as its UI is not dynamically translated
+        if hasattr(self, 'learning_manager') and self.learning_manager.current_dialog and self.learning_manager.current_dialog.isVisible():
+            self.learning_manager.current_dialog.close()
+
     def _update_title(self):
         if self.current_file_path:
             name = os.path.basename(self.current_file_path)
         else:
-            name = "Новая база"
+            name = tr("new_db")
         dirty = " *" if self._dirty else ""
-        self.setWindowTitle(f"Basalt - {name}{dirty}")
+        self.setWindowTitle(f"{tr('app_title')} - {name}{dirty}")
 
     def _mark_dirty(self):
         if not self._dirty:
@@ -218,8 +274,8 @@ class MainWindow(QMainWindow):
 
     def save_project_as(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "Сохранить базу знаний",
-            "basalt_db.json", "JSON (*.json)"
+            self, tr("save_db_title"),
+            "basalt_db.json", tr("json_filter")
         )
         if path:
             if not path.lower().endswith(".json"):
@@ -230,21 +286,21 @@ class MainWindow(QMainWindow):
 
     def export_project(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "Экспортировать базу знаний",
-            "basalt_export.json", "JSON (*.json)"
+            self, tr("export_db_title"),
+            "basalt_export.json", tr("json_filter")
         )
         if path:
             if not path.lower().endswith(".json"):
                 path += ".json"
             self._save_to_path(path, silent=True)
-            QMessageBox.information(self, "Успех", f"База экспортирована в:\n{path}")
+            QMessageBox.information(self, tr("success"), tr("db_exported", path=path))
 
     def open_project(self):
         if self._dirty and not self._ask_save_changes():
             return
 
         path, _ = QFileDialog.getOpenFileName(
-            self, "Открыть базу знаний", "", "JSON (*.json)"
+            self, tr("open_db_title"), "", tr("json_filter")
         )
         if path:
             try:
@@ -261,9 +317,9 @@ class MainWindow(QMainWindow):
                     self.canvas.scene.clear()
                 self._dirty = False
                 self._update_title()
-                QMessageBox.information(self, "Успех", f"База «{os.path.basename(path)}» загружена.")
+                QMessageBox.information(self, tr("success"), tr("db_loaded", name=os.path.basename(path)))
             except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось открыть файл:\n{e}")
+                QMessageBox.critical(self, tr("error"), tr("open_failed", e=e))
 
     def _save_to_path(self, path: str, silent: bool = False):
         try:
@@ -273,10 +329,10 @@ class MainWindow(QMainWindow):
             self._dirty = False
             self._update_title()
             if not silent:
-                self.statusBar().showMessage(f"💾 Сохранено: {path}", 2500)
+                self.statusBar().showMessage(tr("saved_msg", path=path), 2500)
         except Exception as e:
             if not silent:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить:\n{e}")
+                QMessageBox.critical(self, tr("error"), tr("save_failed", e=e))
 
     def closeEvent(self, event):
         if self._dirty:
@@ -286,15 +342,15 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def _ask_save_changes(self) -> bool:
-        name = os.path.basename(self.current_file_path) if self.current_file_path else "Новая база"
+        name = os.path.basename(self.current_file_path) if self.current_file_path else tr("new_db")
         msg = QMessageBox(self)
-        msg.setWindowTitle("Несохранённые изменения")
+        msg.setWindowTitle(tr("unsaved_changes"))
         msg.setIcon(QMessageBox.Question)
-        msg.setText(f"В базе «{name}» есть несохранённые изменения.")
-        msg.setInformativeText("Сохранить их перед выходом?")
-        btn_save = msg.addButton("💾 Сохранить", QMessageBox.AcceptRole)
-        btn_discard = msg.addButton("Не сохранять", QMessageBox.DestructiveRole)
-        msg.addButton(QMessageBox.Cancel)
+        msg.setText(tr("unsaved_changes_text", name=name))
+        msg.setInformativeText(tr("save_before_exit"))
+        btn_save = msg.addButton(tr("save_btn"), QMessageBox.AcceptRole)
+        btn_discard = msg.addButton(tr("dont_save_btn"), QMessageBox.DestructiveRole)
+        btn_cancel = msg.addButton(tr("cancel"), QMessageBox.RejectRole)
         msg.exec_()
         clicked = msg.clickedButton()
         if clicked == btn_save:
@@ -302,15 +358,14 @@ class MainWindow(QMainWindow):
             return True
         elif clicked == btn_discard:
             return True
-        else:
+        elif clicked == btn_cancel:
             return False
+        return False
 
     def _show_welcome(self):
         QMessageBox.information(
-            self, "Добро пожаловать в Basalt!",
-            "У вас пока нет сохранённой базы знаний.\n\n"
-            "Создайте первое дерево через кнопку «➕ Новое дерево» "
-            "или загрузите существующую базу через «📂 Открыть...»."
+            self, tr("welcome_title"),
+            tr("welcome_text")
         )
 
     def _refresh_tree_list(self):
@@ -346,12 +401,12 @@ class MainWindow(QMainWindow):
 
     def rename_current_tree(self):
         if not self.current_tree_id:
-            QMessageBox.warning(self, "Ошибка", "Сначала выберите дерево.")
+            QMessageBox.warning(self, tr("warning"), tr("select_tree_first"))
             return
         tree = self.project.trees.get(self.current_tree_id)
         if not tree: return
         new_title, ok = QInputDialog.getText(
-            self, "Переименовать дерево", "Новое название:", text=tree.title
+            self, tr("rename_tree_title"), tr("rename_tree_prompt"), text=tree.title
         )
         if ok and new_title.strip():
             tree.title = new_title.strip()
@@ -364,14 +419,13 @@ class MainWindow(QMainWindow):
 
     def delete_current_tree(self):
         if not self.current_tree_id:
-            QMessageBox.warning(self, "Ошибка", "Сначала выберите дерево.")
+            QMessageBox.warning(self, tr("warning"), tr("select_tree_first"))
             return
         tree = self.project.trees.get(self.current_tree_id)
         if not tree: return
         reply = QMessageBox.question(
-            self, "Удалить дерево",
-            f"Удалить дерево «{tree.title}» и все его узлы?\n"
-            "Это действие нельзя отменить.",
+            self, tr("delete_tree_title"),
+            tr("delete_tree_confirm", title=tree.title),
             QMessageBox.Yes | QMessageBox.No,
         )
         if reply == QMessageBox.Yes:
@@ -392,10 +446,8 @@ class MainWindow(QMainWindow):
             existing = self.project.find_tree_by_title(tree.title)
             if existing:
                 reply = QMessageBox.question(
-                    self, "Дерево с таким именем уже существует",
-                    f"Дерево с названием «{tree.title}» уже есть в базе.\n"
-                    "Ссылки вида [[...]] могут работать некорректно.\n"
-                    "Всё равно добавить?",
+                    self, tr("tree_already_exists"),
+                    tr("tree_exists_text", title=tree.title),
                     QMessageBox.Yes | QMessageBox.No
                 )
                 if reply != QMessageBox.Yes:
@@ -416,7 +468,7 @@ class MainWindow(QMainWindow):
                 
             self.canvas.set_tree(tree, self.project.settings)
             self._mark_dirty()
-            QMessageBox.information(self, "Успех", f"Дерево «{tree.title}» успешно импортировано!")
+            QMessageBox.information(self, tr("success"), tr("tree_imported", title=tree.title))
 
     def _on_node_selected(self, node_id: str): pass
 
@@ -453,8 +505,8 @@ class MainWindow(QMainWindow):
         if not target_tree: return
         if self._is_new_tree:
             QMessageBox.information(
-                self, "Создано новое дерево",
-                f"Дерево «{target_tree.title}» не существовало и было создано автоматически."
+                self, tr("success"),
+                tr("new_tree_created_auto", title=target_tree.title)
             )
         self.current_tree_id = target_tree.id
         self._refresh_tree_list()
@@ -466,7 +518,7 @@ class MainWindow(QMainWindow):
         self._pending_tree = None
 
     def add_new_tree(self):
-        tree = self.project.add_tree("Новое дерево")
+        tree = self.project.add_tree(tr("default_tree_title"))
         self._refresh_tree_list()
         self.tree_list.setCurrentRow(self.tree_list.count() - 1)
         self._mark_dirty()
@@ -492,15 +544,15 @@ class MainWindow(QMainWindow):
     def add_child_node(self, node_id=None):
         target_id = node_id or self.canvas.selected_id
         if not target_id:
-            QMessageBox.warning(self, "Ошибка", "Сначала выберите узел.")
+            QMessageBox.warning(self, tr("warning"), tr("select_node_first"))
             return
             
         tree = self._get_tree_for_node(target_id)
         if not tree:
-            QMessageBox.warning(self, "Ошибка", "Узел не найден ни в одном дереве.")
+            QMessageBox.warning(self, tr("warning"), tr("node_not_found"))
             return
 
-        new_node = tree.add_child(target_id, "Новый дочерний узел")
+        new_node = tree.add_child(target_id, tr("default_new_child"))
         tree.layout_tree(self.project.settings)
         self.canvas.set_tree(tree, self.project.settings)
         self.canvas.select_node(new_node.id)
@@ -509,18 +561,18 @@ class MainWindow(QMainWindow):
     def add_parent_node(self, node_id=None):
         target_id = node_id or self.canvas.selected_id
         if not target_id:
-            QMessageBox.warning(self, "Ошибка", "Сначала выберите узел.")
+            QMessageBox.warning(self, tr("warning"), tr("select_node_first"))
             return
             
         tree = self._get_tree_for_node(target_id)
         if not tree:
-            QMessageBox.warning(self, "Ошибка", "Узел не найден ни в одном дереве.")
+            QMessageBox.warning(self, tr("warning"), tr("node_not_found"))
             return
 
         dlg = AddParentDialog(self.project, tree.id, target_id, self)
         if dlg.exec_() == QDialog.Accepted:
             if dlg.choice == "new":
-                new_node = tree.add_parent(target_id, "Новый родитель")
+                new_node = tree.add_parent(target_id, tr("default_new_parent"))
                 tree.layout_tree(self.project.settings)
                 self.canvas.set_tree(tree, self.project.settings)
                 self.canvas.select_node(new_node.id)
@@ -533,9 +585,8 @@ class MainWindow(QMainWindow):
                     self._mark_dirty()
                 else:
                     QMessageBox.warning(
-                        self, "Нельзя",
-                        "Этот узел нельзя сделать родителем: он сам является "
-                        "потомком выбранного узла (образуется цикл)."
+                        self, tr("cannot_be_parent_title"),
+                        tr("cannot_be_parent")
                     )
 
     def delete_node(self, node_id=None):
@@ -543,20 +594,17 @@ class MainWindow(QMainWindow):
         if not target_id: return
 
         msg = QMessageBox(self)
-        msg.setWindowTitle("Удаление узла")
+        msg.setWindowTitle(tr("delete_node_title"))
         msg.setIcon(QMessageBox.Question)
-        msg.setText("Как удалить выбранный узел?")
-        msg.setInformativeText(
-            "<b>Только узел</b> — его дети будут подвешены к его родителям.<br>"
-            "<b>Всю ветку</b> — узел вместе со всеми потомками."
-        )
-        btn_only = msg.addButton("Только узел", QMessageBox.YesRole)
-        btn_branch = msg.addButton("Всю ветку", QMessageBox.DestructiveRole)
-        msg.addButton(QMessageBox.Cancel)
+        msg.setText(tr("delete_node_prompt"))
+        msg.setInformativeText(tr("delete_node_info"))
+        btn_only = msg.addButton(tr("node_only_btn"), QMessageBox.YesRole)
+        btn_branch = msg.addButton(tr("entire_branch_btn"), QMessageBox.DestructiveRole)
+        btn_cancel = msg.addButton(tr("cancel"), QMessageBox.RejectRole)
 
         msg.exec_()
         clicked = msg.clickedButton()
-        if clicked == msg.button(QMessageBox.Cancel): return
+        if clicked == btn_cancel: return
 
         tree = self._get_tree_for_node(target_id)
         if not tree: return
@@ -581,7 +629,9 @@ class MainWindow(QMainWindow):
     def open_settings(self):
         dialog = SettingsDialog(self.project.settings, self)
         if dialog.exec_():
-            self.project.settings = dialog.get_settings()
+            self.project.settings, new_lang = dialog.get_settings()
+            if new_lang and new_lang != I18n.instance().get_language():
+                I18n.instance().set_language(new_lang)
             self.auto_layout()
 
     # ══════════════════════════════════════════════════════════
@@ -597,16 +647,15 @@ class MainWindow(QMainWindow):
             self.act_learn_stop.setVisible(True)
             self._mark_dirty()
             QMessageBox.information(
-                self, "Режим обучения запущен",
-                f"Карточки будут всплывать каждые {self.project.learning.interval_minutes} мин.\n"
-                "Занимайтесь своими делами — приложение работает в фоне."
+                self, tr("learning_started_title"),
+                tr("learning_started_text", minutes=self.project.learning.interval_minutes)
             )
 
     def stop_learning(self):
         self.learning_manager.stop()
         self.act_learn.setVisible(True)
         self.act_learn_stop.setVisible(False)
-        QMessageBox.information(self, "Обучение остановлено", "Фоновый режим остановлен.")
+        QMessageBox.information(self, tr("success"), tr("learning_stopped"))
 
     def _navigate_to_node_from_learning(self, tree_id, node_id):
         self.current_tree_id = tree_id
@@ -642,7 +691,7 @@ def remove_json_comments(json_str: str) -> str:
 class ImportTreeDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Импорт дерева из JSON")
+        self.setWindowTitle(tr("import_json_title"))
         self.resize(750, 650)
         self.imported_tree = None
         self._setup_ui()
@@ -650,8 +699,7 @@ class ImportTreeDialog(QDialog):
     def _setup_ui(self):
         layout = QVBoxLayout(self)
 
-        lbl = QLabel("Вставьте JSON-код дерева ниже. Вы можете использовать шаблон в качестве основы.\n"
-                     "Поддерживаются комментарии (// и /* */), а также висячие запятые — они будут автоматически очищены.")
+        lbl = QLabel(tr("import_instructions"))
         lbl.setWordWrap(True)
         layout.addWidget(lbl)
 
@@ -668,7 +716,7 @@ class ImportTreeDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         
-        self.btn_import = QPushButton("Добавить дерево")
+        self.btn_import = QPushButton(tr("add_tree_btn"))
         self.btn_import.setFont(QFont("Segoe UI", 10, QFont.Bold))
         self.btn_import.setStyleSheet(
             "background-color: #10b981; color: white; padding: 10px; border-radius: 4px;"
@@ -676,7 +724,7 @@ class ImportTreeDialog(QDialog):
         self.btn_import.clicked.connect(self._try_import)
         btn_layout.addWidget(self.btn_import)
 
-        btn_cancel = QPushButton("Отмена")
+        btn_cancel = QPushButton(tr("cancel"))
         btn_cancel.setStyleSheet("padding: 10px;")
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(btn_cancel)
@@ -684,42 +732,40 @@ class ImportTreeDialog(QDialog):
         layout.addLayout(btn_layout)
 
     def _get_template(self):
-        return """{
-    // Название вашего дерева
-    "title": "Название нового дерева",
+        return f"""{{
+    // {tr("import_tpl_title")}
+    "title": "{tr("default_tree_title")}",
     
-    // ID корневого узла (должен совпадать с одним из id в списке nodes)
+    // {tr("import_tpl_root_id")}
     "root_id": "node_1",
     
     /* 
-       Список всех узлов дерева.
-       Каждый узел должен иметь уникальный id.
-       parents и children — это массивы id связанных узлов.
+       {tr("import_tpl_nodes_desc")}
     */
     "nodes": [
-        {
+        {{
             "id": "node_1",
-            "title": "Главный вопрос или концепция. Их рекомендуется формулировать так, чтобы они были понятны независимо от других узлов, то есть в полном виде и эксплицидно (чтобы не рушить случайное повторение в learning mode)",
-            "note": "Ответ или подробное описание.",
+            "title": "{tr("import_tpl_main_q")}",
+            "note": "{tr("import_tpl_answer")}",
             "parents": [],
             "children": ["node_2"],
-            "x": 400, // Координата X (можно не указывать)
-            "y": 50   // Координата Y
-        },
-        {
+            "x": 400, // {tr("import_tpl_coords")} X
+            "y": 50   // {tr("import_tpl_coords")} Y
+        }},
+        {{
             "id": "node_2",
-            "title": "Уточняющий вопрос",
-            "note": "Детали, которые развивают тему.",
+            "title": "{tr("import_tpl_clarifying")}",
+            "note": "{tr("import_tpl_details")}",
             "parents": ["node_1"],
             "children": [],
-        }
+        }}
     ]
-}"""
+}}"""
 
     def _try_import(self):
         text = self.text_edit.toPlainText().strip()
         if not text:
-            self.error_lbl.setText("Поле ввода пустое.")
+            self.error_lbl.setText(tr("empty_input"))
             return
 
         clean_text = remove_json_comments(text)
@@ -727,12 +773,12 @@ class ImportTreeDialog(QDialog):
         try:
             data = json.loads(clean_text)
         except json.JSONDecodeError as e:
-            self.error_lbl.setText(f"Ошибка синтаксиса JSON: {e.msg} (строка {e.lineno}, колонка {e.colno}).")
+            self.error_lbl.setText(tr("json_syntax_error", msg=e.msg, lineno=e.lineno, colno=e.colno))
             return
 
         is_valid, err_msg = self._validate(data)
         if not is_valid:
-            self.error_lbl.setText(f"Ошибка структуры: {err_msg}")
+            self.error_lbl.setText(tr("structure_error", err_msg=err_msg))
             return
 
         try:
@@ -741,17 +787,17 @@ class ImportTreeDialog(QDialog):
             self.imported_tree = tree
             self.accept()
         except Exception as e:
-            self.error_lbl.setText(f"Непредвиденная ошибка при создании дерева: {e}")
+            self.error_lbl.setText(tr("unexpected_error", e=e))
 
     def _validate(self, data):
         if not isinstance(data, dict):
-            return False, "Ожидается JSON-объект (словарь) в корне."
+            return False, tr("invalid_root_object")
         
         if "title" not in data or not isinstance(data.get("title"), str):
-            return False, "Отсутствует или некорректно поле 'title' (должно быть строкой)."
+            return False, tr("missing_title_field")
             
         if "nodes" not in data:
-            return False, "Отсутствует поле 'nodes'."
+            return False, tr("missing_nodes_field")
             
         nodes_data = data["nodes"]
         if isinstance(nodes_data, dict):
@@ -759,35 +805,35 @@ class ImportTreeDialog(QDialog):
         elif isinstance(nodes_data, list):
             nodes_list = nodes_data
         else:
-            return False, "Поле 'nodes' должно быть списком или словарем."
+            return False, tr("invalid_nodes_format")
             
         if not nodes_list:
-            return False, "Список узлов 'nodes' пуст."
+            return False, tr("empty_nodes_list")
             
         node_ids = set()
         for n in nodes_list:
             if not isinstance(n, dict):
-                return False, "Каждый узел в 'nodes' должен быть объектом."
+                return False, tr("invalid_node_object")
             if "id" not in n:
-                return False, "У одного из узлов отсутствует поле 'id'."
+                return False, tr("missing_node_id")
             node_ids.add(str(n["id"]))
             
         for n in nodes_list:
             for p in n.get("parents", []):
                 if str(p) not in node_ids:
-                    return False, f"Узел '{n.get('id')}' ссылается на несуществующего родителя '{p}'."
+                    return False, tr("invalid_parent_ref", id=n.get('id'), p=p)
             for c in n.get("children", []):
                 if str(c) not in node_ids:
-                    return False, f"Узел '{n.get('id')}' ссылается на несуществующего потомка '{c}'."
+                    return False, tr("invalid_child_ref", id=n.get('id'), c=c)
                     
         root_id = data.get("root_id")
         if root_id and str(root_id) not in node_ids:
-            return False, f"Указанный root_id '{root_id}' не найден среди узлов."
+            return False, tr("root_id_not_found", root_id=root_id)
             
         if not root_id:
             has_root = any(not n.get("parents") for n in nodes_list)
             if not has_root:
-                return False, "Не указан root_id, и нет ни одного узла без родителей."
+                return False, tr("no_root_node")
                 
         return True, ""
 
@@ -800,15 +846,15 @@ class AddParentDialog(QDialog):
         self.node_id = node_id
         self.choice = "new"
         self.selected_node_id = None
-        self.setWindowTitle("Добавить родительский узел")
+        self.setWindowTitle(tr("add_parent_title"))
         self.resize(560, 480)
         self._setup_ui()
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
 
-        self.rb_new = QRadioButton("➕ Создать новый родительский узел")
-        self.rb_existing = QRadioButton("🔎 Выбрать существующий узел")
+        self.rb_new = QRadioButton(tr("create_new_parent"))
+        self.rb_existing = QRadioButton(tr("select_existing_node"))
         self.rb_new.setChecked(True)
 
         grp = QButtonGroup(self)
@@ -825,12 +871,12 @@ class AddParentDialog(QDialog):
         layout.addWidget(self.node_list)
 
         btn_layout = QHBoxLayout()
-        btn_ok = QPushButton("OK")
+        btn_ok = QPushButton(tr("ok"))
         btn_ok.setStyleSheet(
             "background-color: #3772d6; color: white; padding: 8px; border-radius: 4px;"
         )
         btn_ok.clicked.connect(self._on_accept)
-        btn_cancel = QPushButton("Отмена")
+        btn_cancel = QPushButton(tr("cancel"))
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addStretch()
         btn_layout.addWidget(btn_cancel)
@@ -858,9 +904,9 @@ class AddParentDialog(QDialog):
                 is_locked = (nid in descendants) or (tree.id != self.current_tree_id)
                 lock_text = ""
                 if nid in descendants:
-                    lock_text = " (нельзя: потомок)"
+                    lock_text = tr("locked_descendant")
                 elif tree.id != self.current_tree_id:
-                    lock_text = " (только внутри дерева)"
+                    lock_text = tr("locked_other_tree")
 
                 prefix = "   " * depth
                 item = QListWidgetItem(prefix + n.title + lock_text)
@@ -893,16 +939,15 @@ class AddParentDialog(QDialog):
         else:
             item = self.node_list.currentItem()
             if not item or not (item.flags() & Qt.ItemIsEnabled):
-                QMessageBox.warning(self, "Ошибка", "Выберите доступный узел из списка.")
+                QMessageBox.warning(self, tr("warning"), tr("select_available_node"))
                 return
             data = item.data(Qt.UserRole)
             if not data: return
             tree_id, node_id = data
             if tree_id != self.current_tree_id:
                 QMessageBox.warning(
-                    self, "Ограничение",
-                    "Перемещение узлов между деревьями пока не поддерживается.\n"
-                    "Выберите узел в текущем дереве."
+                    self, tr("cross_tree_move_title"),
+                    tr("cross_tree_move")
                 )
                 return
             self.choice = "existing"
