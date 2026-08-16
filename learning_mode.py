@@ -83,6 +83,15 @@ class NotificationDialog(QDialog):
         
         self.node = node
         self.project = project
+        
+        # Находим дерево, которому принадлежит узел, для отображения контекста
+        self.tree = None
+        for t in self.project.trees.values():
+            if self.node.id in t.nodes:
+                self.tree = t
+                break
+        self.tree_title = self.tree.title if self.tree else "Неизвестное дерево"
+        
         self.setWindowTitle("Basalt — Повторение")
         
         # 2. Убираем Qt.Tool и явно задаём флаги независимого окна.
@@ -169,6 +178,13 @@ class NotificationDialog(QDialog):
 
     def _show_front(self):
         self._clear()
+        
+        # Отображаем контекст (название дерева)
+        tree_lbl = QLabel(f"🌳 <i>{self.tree_title}</i>")
+        tree_lbl.setAlignment(Qt.AlignCenter)
+        tree_lbl.setStyleSheet("color: #64748b; font-size: 11pt; margin-bottom: 8px;")
+        self.card_layout.addWidget(tree_lbl)
+        
         lbl = QLabel(f"<h2>{self.node.title}</h2>")
         lbl.setAlignment(Qt.AlignCenter)
         lbl.setWordWrap(True)
@@ -178,6 +194,12 @@ class NotificationDialog(QDialog):
         self._clear()
         self.btn_reveal.setVisible(False)
         self._set_grading_visible(True)
+
+        # show current question context (tree name)
+        tree_lbl = QLabel(f"🌳 <i>{self.tree_title}</i>")
+        tree_lbl.setAlignment(Qt.AlignCenter)
+        tree_lbl.setStyleSheet("color: #64748b; font-size: 11pt; margin-bottom: 8px;")
+        self.card_layout.addWidget(tree_lbl)
 
         lbl = QLabel(f"<h2>{self.node.title}</h2>")
         lbl.setAlignment(Qt.AlignCenter)
@@ -191,28 +213,22 @@ class NotificationDialog(QDialog):
         )
         self.card_layout.addWidget(note_lbl)
 
-        if self.node.children:
+        # Используем уже найденное self.tree для оптимизации
+        if self.node.children and self.tree:
             header = QLabel("<b>Непосредственные дочерние узлы:</b>")
             header.setFont(QFont("Segoe UI", 10, QFont.Bold))
             self.card_layout.addWidget(header)
 
-            tree = None
-            for t in self.project.trees.values():
-                if self.node.id in t.nodes:
-                    tree = t
-                    break
-                    
-            if tree:
-                for cid in self.node.children:
-                    child = tree.nodes.get(cid)
-                    if not child: continue
-                    text = f"<b>{child.title}</b>: {child.note}" if child.note else f"<b>{child.title}</b>"
-                    lbl_c = QLabel(text)
-                    lbl_c.setWordWrap(True)
-                    lbl_c.setStyleSheet(
-                        "margin-left: 15px; padding: 5px; border-left: 3px solid #3772d6;"
-                    )
-                    self.card_layout.addWidget(lbl_c)
+            for cid in self.node.children:
+                child = self.tree.nodes.get(cid)
+                if not child: continue
+                text = f"<b>{child.title}</b>: {child.note}" if child.note else f"<b>{child.title}</b>"
+                lbl_c = QLabel(text)
+                lbl_c.setWordWrap(True)
+                lbl_c.setStyleSheet(
+                    "margin-left: 15px; padding: 5px; border-left: 3px solid #3772d6;"
+                )
+                self.card_layout.addWidget(lbl_c)
 
     def _grade(self, grade: int):
         self.node.review.schedule(grade)
