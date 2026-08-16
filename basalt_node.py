@@ -43,12 +43,31 @@ class TreeLearningConfig:
 
 
 @dataclass
+class LearningCardSettings:
+    """Настройки внешнего вида карточки обучения."""
+    font_family: str = "Segoe UI"
+    font_size: int = 12
+    card_width: int = 600
+    card_height: int = 450
+    window_position: str = "center"
+    show_children_notes: bool = False
+
+    def to_dict(self) -> dict: return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "LearningCardSettings":
+        if not data: return cls()
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+@dataclass
 class LearningSettings:
     """Настройки режима обучения в фоне."""
     interval_minutes: int = 1
     interval_seconds: int = 0
     random_order_trees: bool = True
     tree_configs: dict[str, TreeLearningConfig] = field(default_factory=dict)
+    card_settings: LearningCardSettings = field(default_factory=LearningCardSettings)
 
     def get_interval_ms(self) -> int:
         return (self.interval_minutes * 60 + self.interval_seconds) * 1000
@@ -64,6 +83,7 @@ class LearningSettings:
             "interval_seconds": self.interval_seconds,
             "random_order_trees": self.random_order_trees,
             "tree_configs": {k: v.to_dict() for k, v in self.tree_configs.items()},
+            "card_settings": self.card_settings.to_dict(),
         }
 
     @classmethod
@@ -74,6 +94,8 @@ class LearningSettings:
         ls.random_order_trees = data.get("random_order_trees", True)
         for k, v in data.get("tree_configs", {}).items():
             ls.tree_configs[k] = TreeLearningConfig.from_dict(v)
+        if "card_settings" in data:
+            ls.card_settings = LearningCardSettings.from_dict(data["card_settings"])
         return ls
 
 
@@ -368,10 +390,10 @@ class BasaltProject:
             due.extend([n for n in tree.nodes.values() if n.review.due <= today])
         return due
 
-    def get_due_nodes_for_learning(self) -> list[BasaltNode]:
+    def get_due_nodes_for_learning(self) -> list[tuple["BasaltTree", "BasaltNode"]]:
         import random
         today = date.today().isoformat()
-        tree_nodes: list[list[BasaltNode]] = []
+        tree_nodes: list[tuple["BasaltTree", list["BasaltNode"]]] = []
 
         for tree in self.trees.values():
             config = self.learning.get_tree_config(tree.id)
@@ -401,14 +423,15 @@ class BasaltProject:
             else:
                 random.shuffle(nodes)
 
-            tree_nodes.append(nodes)
+            tree_nodes.append((tree, nodes))
 
         if self.learning.random_order_trees:
             random.shuffle(tree_nodes)
 
         result = []
-        for tn in tree_nodes:
-            result.extend(tn)
+        for tree, tn in tree_nodes:
+            for n in tn:
+                result.append((tree, n))
         return result
 
     def to_json(self) -> str:
