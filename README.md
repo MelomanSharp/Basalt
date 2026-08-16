@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD033 -->
 
 <p align="center">
-  <img src="basalt_logo.png" alt="Basalt Logo" width="220"/>
+  <img src="basalt_logo.png" alt="Basalt Logo" width="900"/>
 </p>
 
 
