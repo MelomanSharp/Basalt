@@ -160,6 +160,12 @@ class MainWindow(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
 
+        self.act_new_db = QAction(tr("new_db"), self)
+        self.act_new_db.triggered.connect(self.new_project)
+        toolbar.addAction(self.act_new_db)
+    
+        toolbar.addSeparator()
+
         self.act_open = QAction(tr("open"), self)
         self.act_open.triggered.connect(self.open_project)
         toolbar.addAction(self.act_open)
