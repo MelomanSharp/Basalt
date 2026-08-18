@@ -229,6 +229,7 @@ class MainWindow(QMainWindow):
     def _retranslate_ui(self):
         """Dynamically updates all UI strings when language changes."""
         self._update_title()
+        self.act_new_db.setText(tr("new_db"))
         self.lbl_trees.setText(tr("my_trees"))
         
         self.act_open.setText(tr("open"))
@@ -300,6 +301,27 @@ class MainWindow(QMainWindow):
                 path += ".json"
             self._save_to_path(path, silent=True)
             QMessageBox.information(self, tr("success"), tr("db_exported", path=path))
+
+
+    def new_project(self):
+        if self._dirty and not self._ask_save_changes():
+            return
+        
+        if hasattr(self, 'learning_manager') and self.learning_manager.active:
+            self.learning_manager.stop()
+            self.act_learn.setVisible(True)
+            self.act_learn_stop.setVisible(False)
+            
+        self.project = BasaltProject()
+        self.current_file_path = None  # База еще не сохранена на диск
+        self.current_tree_id = None
+        self._dirty = False
+        
+        self._refresh_tree_list()
+        self.canvas.scene.clear()
+        self._update_title()
+    
+        QTimer.singleShot(200, self._show_welcome)
 
     def open_project(self):
         if self._dirty and not self._ask_save_changes():
