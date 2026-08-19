@@ -106,6 +106,8 @@ class MainWindow(QMainWindow):
         self.learning_manager = LearningManager(self.project, self)
         self.learning_manager.navigate_to_node.connect(self._navigate_to_node_from_learning)
 
+        self._refresh_tree_list() 
+
         if self.project.trees:
             self.tree_list.setCurrentRow(0)
 
