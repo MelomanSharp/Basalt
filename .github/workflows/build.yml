@@ -30,11 +30,18 @@ jobs:
         run: |
           pyinstaller --noconfirm --onefile --windowed --name "Basalt" main.py
 
-      - name: Upload Artifact (for debugging/history)
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Compile Installer with Inno Setup
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Basalt-Windows-EXE-${{ github.sha }}
-          path: dist/Basalt.exe
+          name: Basalt-Installer
+          path: Output/Basalt_Setup.exe
           retention-days: 7
 
       - name: Publish to "latest" Release
@@ -42,7 +49,7 @@ jobs:
         with:
           tag: "latest"
           name: "Latest Build (Auto-updated)"
-          artifacts: "dist/Basalt.exe"
+          artifacts: "Output/Basalt_Setup.exe,dist/Basalt.exe"
           allowUpdates: true
           prerelease: true
           body: "Automatic build from the latest commit of the main branch. Contains the most recent changes."
