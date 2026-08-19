@@ -1,0 +1,46 @@
+name: Build and Release EXE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build EXE with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onefile --windowed --name "Basalt" main.py
+
+      - name: Upload Artifact (for debugging/history)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Basalt-Windows-EXE-${{ github.sha }}
+          path: dist/Basalt.exe
+          retention-days: 7
+
+      - name: Publish to "latest" Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "latest"
+          name: "Latest Build (Auto-updated)"
+          artifacts: "dist/Basalt.exe"
+          allowUpdates: true
+          prerelease: true
+          body: "Automatic build from the latest commit of the main branch. Contains the most recent changes."
+          token: ${{ secrets.GITHUB_TOKEN }}

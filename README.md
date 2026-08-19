@@ -150,6 +150,18 @@ You can switch the language in **View Settings** (⚙️). The interface updates
 
 ---
 
+## 📥 Download Pre-compiled EXE (Windows)
+Now you don't need to install Python or dependencies to use Basalt. Pre-compiled `.exe` files are built automatically every time the code is updated.
+
+1. Go to the **[Releases page](https://github.com/MelomanSharp/Basalt/releases)**.
+2. Find the release named **"Latest Build (Auto-updated)"** (tagged as `latest`).
+3. Download the `Basalt.exe` file from the "Assets" section.
+4. Run the application directly. No installation required!
+
+*(Note: If you want to build from source or contribute to the code, see the Installation section below).*
+
+---
+
 ## Installation
 
 1. Clone the repository (or download the source code):
@@ -170,7 +182,6 @@ You can switch the language in **View Settings** (⚙️). The interface updates
    ```bash
    python main.py
    ```
-
 ---
 
 ## Usage
