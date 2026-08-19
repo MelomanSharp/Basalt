@@ -25,6 +25,11 @@ The project is conceptually inspired by Obsidian and Anki, combining the strengt
 
 ## Features
 
+<p align="center">
+  <img src="Basalt_Review.gif" alt="Basalt Review" width="900"/>
+</p>
+
+
 ### 1. Knowledge Representation
 
 Unlike Obsidian, where the primary unit of information is a Markdown file, every note in Basalt is an independent tree with an unlimited number of nodes. These trees are viewed directly as interactive graphical structures rather than plain text documents.
@@ -119,6 +124,10 @@ You can fine-tune the learning process:
 - Adjust card appearance: font, size, window dimensions, screen position.
 - Show or hide notes of child nodes immediately.
 
+<p align="center">
+  <img src="Learning_Mode_Basalt.gif" alt="Learning Mode" width="900"/>
+</p>
+
 ### 6. Data Storage
 
 Internally, the knowledge base is stored in JSON format.
@@ -132,7 +141,7 @@ The following operations are supported:
 
 ### 7. Localization
 
-Basalt supports multiple languages out of the box:
+Basalt supports multiple languages out of the box, for example:
 
 - English
 - Русский
