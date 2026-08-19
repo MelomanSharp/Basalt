@@ -1,5 +1,4 @@
 """Domain model and persistence helpers for Basalt."""
-
 from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
@@ -29,7 +28,6 @@ class LayoutSettings:
         if not data: return cls()
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
-
 @dataclass
 class TreeLearningConfig:
     """Learning settings for a single tree."""
@@ -41,7 +39,6 @@ class TreeLearningConfig:
     @classmethod
     def from_dict(cls, data: dict) -> "TreeLearningConfig":
         return cls(enabled=data.get("enabled", True), mode=data.get("mode", "random"))
-
 
 @dataclass
 class LearningCardSettings:
@@ -59,7 +56,6 @@ class LearningCardSettings:
     def from_dict(cls, data: dict) -> "LearningCardSettings":
         if not data: return cls()
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
-
 
 @dataclass
 class LearningSettings:
@@ -99,7 +95,6 @@ class LearningSettings:
             ls.card_settings = LearningCardSettings.from_dict(data["card_settings"])
         return ls
 
-
 @dataclass
 class Review:
     due: str = field(default_factory=lambda: date.today().isoformat())
@@ -131,11 +126,9 @@ class Review:
             repetitions=int(data.get("repetitions", 0)),
         )
 
-
 @dataclass
 class BasaltNode:
     id: str = field(default_factory=new_id)
-    # Fallback to translation if created programmatically without title
     title: str = field(default_factory=lambda: tr("default_node_title"))
     note: str = ""
     parents: list[str] = field(default_factory=list)
@@ -174,7 +167,6 @@ class BasaltNode:
             y=float(data.get("y", 0)),
             review=Review.from_dict(data.get("review")),
         )
-
 
 @dataclass
 class BasaltTree:
@@ -303,12 +295,11 @@ class BasaltTree:
 
     def layout_tree(self, settings: LayoutSettings):
         if not self.root_id: return
-
         w = settings.node_width
         h = settings.node_height
         h_gap = settings.h_spacing
         v_gap = settings.v_spacing
-
+        
         widths = {}
         def calc_width(nid, visited=None):
             if visited is None: visited = set()
@@ -321,25 +312,33 @@ class BasaltTree:
             children_width = sum(calc_width(c, visited) for c in node.children) + h_gap * (len(node.children) - 1)
             widths[nid] = max(w, children_width)
             return widths[nid]
-
+        
         calc_width(self.root_id)
-
-        def assign_pos(nid, x, y, visited=None):
+        
+        # Recursive function to assign positions based on the CENTER of the node
+        def assign_pos(nid, center_x, y, visited=None):
             if visited is None: visited = set()
             if nid in visited: return
             visited.add(nid)
             node = self.nodes[nid]
-            node_w = widths.get(nid, w)
-            node.x = x + (node_w - w) / 2
+            
+            # Center the node horizontally at center_x
+            node.x = center_x - w / 2
             node.y = y
-
+            
             if node.children:
                 total_children_w = sum(widths.get(c, w) for c in node.children) + h_gap * (len(node.children) - 1)
-                curr_x = x + (node_w - total_children_w) / 2
+                # The left edge of the children's bounding box
+                start_x = center_x - total_children_w / 2
+                curr_x = start_x
                 for c in node.children:
-                    assign_pos(c, curr_x, y + h + v_gap, visited)
-                    curr_x += widths.get(c, w) + h_gap
-
+                    c_width = widths.get(c, w)
+                    # The center of the child's bounding box
+                    child_center_x = curr_x + c_width / 2
+                    assign_pos(c, child_center_x, y + h + v_gap, visited)
+                    curr_x += c_width + h_gap
+                    
+        # Root is perfectly centered at x=0, y=0
         assign_pos(self.root_id, 0, 0)
 
     def to_dict(self) -> dict[str, Any]:
@@ -364,7 +363,6 @@ class BasaltTree:
             roots = [n.id for n in tree.nodes.values() if not n.parents]
             tree.root_id = roots[0] if roots else None
         return tree
-
 
 @dataclass
 class BasaltProject:

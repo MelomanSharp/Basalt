@@ -1,11 +1,9 @@
 """Canvas-based tree visualisation using PyQt (Top-Down orientation)."""
-
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsProxyWidget
 from PyQt5.QtGui import QPainter, QPen, QColor, QPainterPath, QWheelEvent, QMouseEvent
 from PyQt5.QtCore import Qt, pyqtSignal
 from basalt_node import BasaltTree, LayoutSettings
 from ui_node import UINode
-
 
 class BasaltCanvas(QGraphicsView):
     node_selected = pyqtSignal(str)
@@ -32,12 +30,33 @@ class BasaltCanvas(QGraphicsView):
         self._panning = False
         self._last_pos = None
 
-    def set_tree(self, tree: BasaltTree, settings: LayoutSettings):
+    def set_tree(self, tree: BasaltTree, settings: LayoutSettings, center_view: bool = False):
         self.tree = tree
         self.settings = settings
         self.selected_id = None
         self.collapsed_nodes.clear()
         self.redraw()
+        
+        # Center the viewport if explicitly requested (e.g., on tree switch or auto-layout)
+        if center_view:
+            self._center_view_on_tree()
+
+    def _center_view_on_tree(self):
+        """Centers the viewport on the tree's bounding box."""
+        if not self.ui_nodes:
+            return
+        
+        w = self.settings.node_width
+        h = self.settings.node_height
+        
+        min_x = min(n.x() for n in self.ui_nodes.values())
+        min_y = min(n.y() for n in self.ui_nodes.values())
+        max_x = max(n.x() + w for n in self.ui_nodes.values())
+        max_y = max(n.y() + h for n in self.ui_nodes.values())
+        
+        center_x = (min_x + max_x) / 2
+        center_y = (min_y + max_y) / 2
+        self.centerOn(center_x, center_y)
 
     def update_settings(self, settings: LayoutSettings):
         self.settings = settings
@@ -89,7 +108,7 @@ class BasaltCanvas(QGraphicsView):
         if self.tree.root_id:
             collect_visible(self.tree.root_id)
 
-        # Draw links (accounting for multiple parents)
+        # 1. Draw links (accounting for multiple parents)
         drawn_links = set()
         for nid in visible_ids:
             node = self.tree.nodes[nid]
@@ -98,14 +117,29 @@ class BasaltCanvas(QGraphicsView):
                     key = tuple(sorted((nid, cid)))
                     if key not in drawn_links:
                         self._draw_link(node, self.tree.nodes[cid])
-                        drawn_links.add(key)
+                    drawn_links.add(key)
 
+        # 2. Create UI nodes
         for nid in visible_ids:
             node = self.tree.nodes[nid]
             ui_node = UINode(node, self, self.settings)
             ui_node.set_selected(nid == self.selected_id)
             self.scene.addItem(ui_node)
             self.ui_nodes[nid] = ui_node
+
+        # 3. CRITICAL FIX: Update scene rect to fit all items with padding.
+        # Without this, scrollbars break and nodes might appear "invisible".
+        if self.ui_nodes:
+            w = self.settings.node_width
+            h = self.settings.node_height
+            min_x = min(n.x() for n in self.ui_nodes.values())
+            min_y = min(n.y() for n in self.ui_nodes.values())
+            max_x = max(n.x() + w for n in self.ui_nodes.values())
+            max_y = max(n.y() + h for n in self.ui_nodes.values())
+            padding = 150
+            self.scene.setSceneRect(min_x - padding, min_y - padding, 
+                                    (max_x - min_x) + 2 * padding, 
+                                    (max_y - min_y) + 2 * padding)
 
     def _draw_link(self, parent_node, child_node):
         w = self.settings.node_width
@@ -123,7 +157,6 @@ class BasaltCanvas(QGraphicsView):
         factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
         self.scale(factor, factor)
 
-    # ── NEW: LMB on empty space = panning ─────────
     def _hit_node(self, event: QMouseEvent) -> bool:
         """Returns True if the click hit any node."""
         scene_pos = self.mapToScene(event.pos())

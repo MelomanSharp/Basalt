@@ -419,7 +419,8 @@ class MainWindow(QMainWindow):
         self.current_tree_id = tree_id
         tree = self.project.trees.get(tree_id)
         if tree:
-            self.canvas.set_tree(tree, self.project.settings)
+            # Center view when switching trees
+            self.canvas.set_tree(tree, self.project.settings, center_view=True)
 
     def _on_tree_renamed(self, item: QListWidgetItem):
         tree_id = item.data(Qt.UserRole)
@@ -498,8 +499,9 @@ class MainWindow(QMainWindow):
             has_custom_layout = any(n.x != 0.0 or n.y != 0.0 for n in tree.nodes.values())
             if not has_custom_layout:
                 tree.layout_tree(self.project.settings)
-                
-            self.canvas.set_tree(tree, self.project.settings)
+            
+            # Center view after importing
+            self.canvas.set_tree(tree, self.project.settings, center_view=True)
             self._mark_dirty()
             QMessageBox.information(self, tr("success"), tr("tree_imported", title=tree.title))
 
@@ -547,13 +549,18 @@ class MainWindow(QMainWindow):
             if self.tree_list.item(i).data(Qt.UserRole) == target_tree.id:
                 self.tree_list.setCurrentRow(i)
                 break
-        self.canvas.set_tree(target_tree, self.project.settings)
+        # Center view when navigating to a new or existing tree via link
+        self.canvas.set_tree(target_tree, self.project.settings, center_view=True)
         self._pending_tree = None
 
     def add_new_tree(self):
         tree = self.project.add_tree(tr("default_tree_title"))
+        # Calculate layout immediately so it has valid coordinates
+        tree.layout_tree(self.project.settings) 
         self._refresh_tree_list()
         self.tree_list.setCurrentRow(self.tree_list.count() - 1)
+        # Show and center the new tree immediately on the canvas
+        self.canvas.set_tree(tree, self.project.settings, center_view=True)
         self._mark_dirty()
 
     def _get_tree_for_node(self, node_id: str):
@@ -587,7 +594,7 @@ class MainWindow(QMainWindow):
 
         new_node = tree.add_child(target_id, tr("default_new_child"))
         tree.layout_tree(self.project.settings)
-        self.canvas.set_tree(tree, self.project.settings)
+        self.canvas.set_tree(tree, self.project.settings, center_view=False)
         self.canvas.select_node(new_node.id)
         self._mark_dirty()
 
@@ -607,14 +614,14 @@ class MainWindow(QMainWindow):
             if dlg.choice == "new":
                 new_node = tree.add_parent(target_id, tr("default_new_parent"))
                 tree.layout_tree(self.project.settings)
-                self.canvas.set_tree(tree, self.project.settings)
+                self.canvas.set_tree(tree, self.project.settings, center_view=False)
                 self.canvas.select_node(new_node.id)
                 self._mark_dirty()
             elif dlg.choice == "existing":
                 selected_target_id = dlg.selected_node_id
                 if tree.reparent_node(target_id, selected_target_id):
                     tree.layout_tree(self.project.settings)
-                    self.canvas.set_tree(tree, self.project.settings)
+                    self.canvas.set_tree(tree, self.project.settings, center_view=False)
                     self._mark_dirty()
                 else:
                     QMessageBox.warning(
@@ -649,14 +656,16 @@ class MainWindow(QMainWindow):
 
         self.canvas.selected_id = None
         tree.layout_tree(self.project.settings)
-        self.canvas.set_tree(tree, self.project.settings)
+        self.canvas.set_tree(tree, self.project.settings, center_view=False)
         self._mark_dirty()
+
 
     def auto_layout(self):
         tree = self.project.trees.get(self.current_tree_id)
         if tree:
             tree.layout_tree(self.project.settings)
-            self.canvas.set_tree(tree, self.project.settings)
+            # Center view after manual auto-layout request
+            self.canvas.set_tree(tree, self.project.settings, center_view=True)
             self._mark_dirty()
 
     def open_settings(self):
