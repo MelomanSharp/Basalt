@@ -348,6 +348,9 @@ class MainWindow(QMainWindow):
                 self._dirty = False
                 self._update_title()
                 QMessageBox.information(self, tr("success"), tr("db_loaded", name=os.path.basename(path)))
+
+                self._refresh_tree_list()
+                
             except Exception as e:
                 QMessageBox.critical(self, tr("error"), tr("open_failed", e=e))
 
