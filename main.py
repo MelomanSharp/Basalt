@@ -16,6 +16,8 @@ from basalt_canvas import BasaltCanvas
 from learning_mode import LearningManager, LearningSettingsDialog
 from ui_settings import SettingsDialog
 from i18n import tr, I18n
+from locus_3d import Locus3DDialog
+
 
 
 def create_app_icon() -> QIcon:
@@ -227,6 +229,14 @@ class MainWindow(QMainWindow):
         self.act_learn_stop.triggered.connect(self.stop_learning)
         self.act_learn_stop.setVisible(False)
         toolbar.addAction(self.act_learn_stop)
+
+        toolbar.addSeparator()
+        self.act_locus = QAction("🌌 Locus 3D", self)
+        self.act_locus.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.act_locus.setToolTip("Enter 3D Memory Palace (WASD + Mouse)")
+        self.act_locus.triggered.connect(self.enter_locus)
+        toolbar.addAction(self.act_locus)
+
 
     def _retranslate_ui(self):
         """Dynamically updates all UI strings when language changes."""
@@ -675,6 +685,21 @@ class MainWindow(QMainWindow):
             if new_lang and new_lang != I18n.instance().get_language():
                 I18n.instance().set_language(new_lang)
             self.auto_layout()
+
+    def enter_locus(self):
+        if not self.current_tree_id:
+            QMessageBox.warning(self, tr("warning"), tr("select_tree_first"))
+            return
+        
+        tree = self.project.trees.get(self.current_tree_id)
+        if not tree or not tree.nodes:
+            QMessageBox.warning(self, tr("warning"), "Tree is empty.")
+            return
+
+        dialog = Locus3DDialog(tree, self)
+        dialog.exec_()
+        
+        self._mark_dirty()
 
     # ══════════════════════════════════════════════════════════
     #  Learning Mode

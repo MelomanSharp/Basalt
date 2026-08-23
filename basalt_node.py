@@ -175,6 +175,9 @@ class BasaltTree:
     root_id: str | None = None
     nodes: dict[str, BasaltNode] = field(default_factory=dict)
 
+    locus_cam_pos: list[float] = field(default_factory=lambda: [0.0, 15.0, 30.0])
+    locus_cam_rot: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
+
     def create_root(self, title: str | None = None) -> BasaltNode:
         if title is None: title = tr("default_root_title")
         node = BasaltNode(title=title, x=400, y=50)
