@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen, QLinearGradient
 from PyQt5.QtCore import Qt, QTimer, QSettings, QPointF, QRectF
-
 from basalt_node import BasaltProject, BasaltTree, new_id
 from basalt_canvas import BasaltCanvas
 from learning_mode import LearningManager, LearningSettingsDialog
@@ -18,13 +17,7 @@ from ui_settings import SettingsDialog
 from i18n import tr, I18n
 from locus_3d import Locus3DDialog
 
-
-
 def create_app_icon() -> QIcon:
-    """
-    Tries to load icon.ico/icon.png from the app directory.
-    If not found, generates a high-quality programmatic fallback icon.
-    """
     base_dir = os.path.dirname(os.path.abspath(__file__))
     for ext in ["icon.ico", "icon.png", "icon.svg"]:
         icon_path = os.path.join(base_dir, ext)
@@ -33,45 +26,35 @@ def create_app_icon() -> QIcon:
             if not icon.isNull():
                 return icon
 
-    # Fallback to high-res programmatic icon
     pixmap = QPixmap(256, 256)
     pixmap.fill(Qt.transparent)
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.Antialiasing)
     painter.setRenderHint(QPainter.SmoothPixmapTransform)
-
     bg_rect = QRectF(10, 10, 236, 236)
     painter.setPen(Qt.NoPen)
-    
-    # Gradient background (Basalt dark grey to blue)
     grad = QLinearGradient(0, 0, 256, 256)
     grad.setColorAt(0, QColor("#2d3748"))
     grad.setColorAt(1, QColor("#1a202c"))
     painter.setBrush(grad)
     painter.drawRoundedRect(bg_rect, 40, 40)
-
-    # Draw a stylized network / tree
     painter.setPen(QPen(QColor("#63b3ed"), 8, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
     painter.drawLine(128, 60, 128, 120)
     painter.drawLine(128, 120, 70, 180)
     painter.drawLine(128, 120, 186, 180)
-    
     painter.setBrush(QColor("#63b3ed"))
     painter.drawEllipse(QPointF(128, 60), 16, 16)
     painter.drawEllipse(QPointF(128, 120), 16, 16)
     painter.drawEllipse(QPointF(70, 180), 16, 16)
     painter.drawEllipse(QPointF(186, 180), 16, 16)
-    
     painter.end()
     return QIcon(pixmap)
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.resize(1400, 850)
         self.setWindowIcon(create_app_icon())
-
         self.qsettings = QSettings("Basalt", "Basalt")
         self.current_file_path: str | None = None
         self._dirty = False
@@ -96,29 +79,21 @@ class MainWindow(QMainWindow):
 
         self._setup_ui()
         self._setup_toolbar()
-        
-        # Setup I18n AFTER UI is created so _retranslate_ui can access widgets
+
         lang = self.qsettings.value("language", "en")
         I18n.instance().on_language_changed(self._retranslate_ui)
-        I18n.instance().set_language(lang) # Triggers initial translation
-
+        I18n.instance().set_language(lang)
         self._update_title()
 
-        # Background learning manager
         self.learning_manager = LearningManager(self.project, self)
         self.learning_manager.navigate_to_node.connect(self._navigate_to_node_from_learning)
 
-        self._refresh_tree_list() 
-
+        self._refresh_tree_list()
         if self.project.trees:
             self.tree_list.setCurrentRow(0)
 
         if not self.current_file_path and not self.project.trees:
             QTimer.singleShot(200, self._show_welcome)
-
-    # ══════════════════════════════════════════════════════════
-    #  UI
-    # ══════════════════════════════════════════════════════════
 
     def _setup_ui(self):
         central_widget = QWidget()
@@ -127,7 +102,6 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.splitter = QSplitter(Qt.Horizontal)
-
         sidebar_widget = QWidget()
         sidebar_layout = QVBoxLayout(sidebar_widget)
         sidebar_layout.setContentsMargins(5, 5, 5, 5)
@@ -151,6 +125,9 @@ class MainWindow(QMainWindow):
         self.canvas.add_child_requested.connect(self.add_child_node)
         self.canvas.add_parent_requested.connect(self.add_parent_node)
         self.canvas.delete_node_requested.connect(self.delete_node)
+        # Connect new move signals
+        self.canvas.move_child_left_requested.connect(self.move_node_left)
+        self.canvas.move_child_right_requested.connect(self.move_node_right)
 
         self.splitter.addWidget(sidebar_widget)
         self.splitter.addWidget(self.canvas)
@@ -167,7 +144,6 @@ class MainWindow(QMainWindow):
         self.act_new_db = QAction(tr("new_db"), self)
         self.act_new_db.triggered.connect(self.new_project)
         toolbar.addAction(self.act_new_db)
-    
         toolbar.addSeparator()
 
         self.act_open = QAction(tr("open"), self)
@@ -186,7 +162,6 @@ class MainWindow(QMainWindow):
         self.act_export = QAction(tr("export"), self)
         self.act_export.triggered.connect(self.export_project)
         toolbar.addAction(self.act_export)
-
         toolbar.addSeparator()
 
         self.act_new_tree = QAction(tr("new_tree"), self)
@@ -204,19 +179,16 @@ class MainWindow(QMainWindow):
         self.act_delete_tree = QAction(tr("delete_tree"), self)
         self.act_delete_tree.triggered.connect(self.delete_current_tree)
         toolbar.addAction(self.act_delete_tree)
-
         toolbar.addSeparator()
 
         self.act_layout = QAction(tr("auto_layout"), self)
         self.act_layout.triggered.connect(self.auto_layout)
         toolbar.addAction(self.act_layout)
-
         toolbar.addSeparator()
 
         self.act_settings = QAction(tr("view_settings"), self)
         self.act_settings.triggered.connect(self.open_settings)
         toolbar.addAction(self.act_settings)
-
         toolbar.addSeparator()
 
         self.act_learn = QAction(tr("start_learning"), self)
@@ -229,21 +201,18 @@ class MainWindow(QMainWindow):
         self.act_learn_stop.triggered.connect(self.stop_learning)
         self.act_learn_stop.setVisible(False)
         toolbar.addAction(self.act_learn_stop)
-
         toolbar.addSeparator()
-        self.act_locus = QAction("🌌 Locus 3D", self)
+
+        self.act_locus = QAction("🏛️ Locus 3D", self)
         self.act_locus.setFont(QFont("Segoe UI", 10, QFont.Bold))
         self.act_locus.setToolTip("Enter 3D Memory Palace (WASD + Mouse)")
         self.act_locus.triggered.connect(self.enter_locus)
         toolbar.addAction(self.act_locus)
 
-
     def _retranslate_ui(self):
-        """Dynamically updates all UI strings when language changes."""
         self._update_title()
         self.act_new_db.setText(tr("new_db"))
         self.lbl_trees.setText(tr("my_trees"))
-        
         self.act_open.setText(tr("open"))
         self.act_save.setText(tr("save"))
         self.act_save_as.setText(tr("save_as"))
@@ -256,10 +225,7 @@ class MainWindow(QMainWindow):
         self.act_settings.setText(tr("view_settings"))
         self.act_learn.setText(tr("start_learning"))
         self.act_learn_stop.setText(tr("stop_learning"))
-        
         self.qsettings.setValue("language", I18n.instance().get_language())
-        
-        # Close learning dialog if open, as its UI is not dynamically translated
         if hasattr(self, 'learning_manager') and self.learning_manager.current_dialog and self.learning_manager.current_dialog.isVisible():
             self.learning_manager.current_dialog.close()
 
@@ -275,8 +241,8 @@ class MainWindow(QMainWindow):
         if not self._dirty:
             self._dirty = True
             self._update_title()
-        self._autosave_pending = True
-        QTimer.singleShot(1500, self._try_autosave)
+            self._autosave_pending = True
+            QTimer.singleShot(1500, self._try_autosave)
 
     def _try_autosave(self):
         if not self._autosave_pending:
@@ -314,31 +280,25 @@ class MainWindow(QMainWindow):
             self._save_to_path(path, silent=True)
             QMessageBox.information(self, tr("success"), tr("db_exported", path=path))
 
-
     def new_project(self):
         if self._dirty and not self._ask_save_changes():
             return
-        
         if hasattr(self, 'learning_manager') and self.learning_manager.active:
             self.learning_manager.stop()
             self.act_learn.setVisible(True)
             self.act_learn_stop.setVisible(False)
-            
         self.project = BasaltProject()
-        self.current_file_path = None  # База еще не сохранена на диск
+        self.current_file_path = None
         self.current_tree_id = None
         self._dirty = False
-        
         self._refresh_tree_list()
         self.canvas.scene.clear()
         self._update_title()
-    
         QTimer.singleShot(200, self._show_welcome)
 
     def open_project(self):
         if self._dirty and not self._ask_save_changes():
             return
-
         path, _ = QFileDialog.getOpenFileName(
             self, tr("open_db_title"), "", tr("json_filter")
         )
@@ -358,9 +318,7 @@ class MainWindow(QMainWindow):
                 self._dirty = False
                 self._update_title()
                 QMessageBox.information(self, tr("success"), tr("db_loaded", name=os.path.basename(path)))
-
                 self._refresh_tree_list()
-                
             except Exception as e:
                 QMessageBox.critical(self, tr("error"), tr("open_failed", e=e))
 
@@ -429,7 +387,6 @@ class MainWindow(QMainWindow):
         self.current_tree_id = tree_id
         tree = self.project.trees.get(tree_id)
         if tree:
-            # Center view when switching trees
             self.canvas.set_tree(tree, self.project.settings, center_view=True)
 
     def _on_tree_renamed(self, item: QListWidgetItem):
@@ -486,7 +443,6 @@ class MainWindow(QMainWindow):
         dlg = ImportTreeDialog(self)
         if dlg.exec_() == QDialog.Accepted and dlg.imported_tree:
             tree = dlg.imported_tree
-            
             existing = self.project.find_tree_by_title(tree.title)
             if existing:
                 reply = QMessageBox.question(
@@ -496,21 +452,16 @@ class MainWindow(QMainWindow):
                 )
                 if reply != QMessageBox.Yes:
                     return
-
             self.project.trees[tree.id] = tree
             self.project.learning.get_tree_config(tree.id)
-            
             self._refresh_tree_list()
             for i in range(self.tree_list.count()):
                 if self.tree_list.item(i).data(Qt.UserRole) == tree.id:
                     self.tree_list.setCurrentRow(i)
                     break
-                    
             has_custom_layout = any(n.x != 0.0 or n.y != 0.0 for n in tree.nodes.values())
             if not has_custom_layout:
                 tree.layout_tree(self.project.settings)
-            
-            # Center view after importing
             self.canvas.set_tree(tree, self.project.settings, center_view=True)
             self._mark_dirty()
             QMessageBox.information(self, tr("success"), tr("tree_imported", title=tree.title))
@@ -541,7 +492,7 @@ class MainWindow(QMainWindow):
             target_tree = self.project.add_tree(target_title)
             target_tree.layout_tree(self.project.settings)
             self._is_new_tree = True
-            self._mark_dirty()
+        self._mark_dirty()
         self._pending_tree = target_tree
         QTimer.singleShot(0, self._apply_navigation)
 
@@ -559,17 +510,14 @@ class MainWindow(QMainWindow):
             if self.tree_list.item(i).data(Qt.UserRole) == target_tree.id:
                 self.tree_list.setCurrentRow(i)
                 break
-        # Center view when navigating to a new or existing tree via link
         self.canvas.set_tree(target_tree, self.project.settings, center_view=True)
         self._pending_tree = None
 
     def add_new_tree(self):
         tree = self.project.add_tree(tr("default_tree_title"))
-        # Calculate layout immediately so it has valid coordinates
-        tree.layout_tree(self.project.settings) 
+        tree.layout_tree(self.project.settings)
         self._refresh_tree_list()
         self.tree_list.setCurrentRow(self.tree_list.count() - 1)
-        # Show and center the new tree immediately on the canvas
         self.canvas.set_tree(tree, self.project.settings, center_view=True)
         self._mark_dirty()
 
@@ -578,7 +526,6 @@ class MainWindow(QMainWindow):
             tree = self.project.trees[self.current_tree_id]
             if node_id in tree.nodes:
                 return tree
-        
         for tree in self.project.trees.values():
             if node_id in tree.nodes:
                 self.current_tree_id = tree.id
@@ -596,12 +543,10 @@ class MainWindow(QMainWindow):
         if not target_id:
             QMessageBox.warning(self, tr("warning"), tr("select_node_first"))
             return
-            
         tree = self._get_tree_for_node(target_id)
         if not tree:
             QMessageBox.warning(self, tr("warning"), tr("node_not_found"))
             return
-
         new_node = tree.add_child(target_id, tr("default_new_child"))
         tree.layout_tree(self.project.settings)
         self.canvas.set_tree(tree, self.project.settings, center_view=False)
@@ -613,12 +558,10 @@ class MainWindow(QMainWindow):
         if not target_id:
             QMessageBox.warning(self, tr("warning"), tr("select_node_first"))
             return
-            
         tree = self._get_tree_for_node(target_id)
         if not tree:
             QMessageBox.warning(self, tr("warning"), tr("node_not_found"))
             return
-
         dlg = AddParentDialog(self.project, tree.id, target_id, self)
         if dlg.exec_() == QDialog.Accepted:
             if dlg.choice == "new":
@@ -642,7 +585,6 @@ class MainWindow(QMainWindow):
     def delete_node(self, node_id=None):
         target_id = node_id or self.canvas.selected_id
         if not target_id: return
-
         msg = QMessageBox(self)
         msg.setWindowTitle(tr("delete_node_title"))
         msg.setIcon(QMessageBox.Question)
@@ -651,30 +593,49 @@ class MainWindow(QMainWindow):
         btn_only = msg.addButton(tr("node_only_btn"), QMessageBox.YesRole)
         btn_branch = msg.addButton(tr("entire_branch_btn"), QMessageBox.DestructiveRole)
         btn_cancel = msg.addButton(tr("cancel"), QMessageBox.RejectRole)
-
         msg.exec_()
         clicked = msg.clickedButton()
         if clicked == btn_cancel: return
-
         tree = self._get_tree_for_node(target_id)
         if not tree: return
-
         if clicked == btn_only:
             tree.remove_node_only(target_id)
         else:
             tree.remove_node(target_id)
-
         self.canvas.selected_id = None
         tree.layout_tree(self.project.settings)
         self.canvas.set_tree(tree, self.project.settings, center_view=False)
         self._mark_dirty()
 
+    # === NEW FEATURE HANDLERS ===
+    def move_node_left(self, node_id=None):
+        self._move_node_horizontally(node_id, -1)
+
+    def move_node_right(self, node_id=None):
+        self._move_node_horizontally(node_id, 1)
+
+    def _move_node_horizontally(self, node_id, direction):
+        target_id = node_id or self.canvas.selected_id
+        if not target_id:
+            QMessageBox.warning(self, tr("warning"), tr("select_node_first"))
+            return
+
+        tree = self._get_tree_for_node(target_id)
+        if not tree:
+            QMessageBox.warning(self, tr("warning"), tr("node_not_found"))
+            return
+
+        if tree.move_child(target_id, direction):
+            tree.layout_tree(self.project.settings)
+            self.canvas.set_tree(tree, self.project.settings, center_view=False)
+            self.canvas.select_node(target_id)
+            self._mark_dirty()
+    # ============================
 
     def auto_layout(self):
         tree = self.project.trees.get(self.current_tree_id)
         if tree:
             tree.layout_tree(self.project.settings)
-            # Center view after manual auto-layout request
             self.canvas.set_tree(tree, self.project.settings, center_view=True)
             self._mark_dirty()
 
@@ -690,20 +651,13 @@ class MainWindow(QMainWindow):
         if not self.current_tree_id:
             QMessageBox.warning(self, tr("warning"), tr("select_tree_first"))
             return
-        
         tree = self.project.trees.get(self.current_tree_id)
         if not tree or not tree.nodes:
             QMessageBox.warning(self, tr("warning"), "Tree is empty.")
             return
-
         dialog = Locus3DDialog(tree, self)
         dialog.exec_()
-        
         self._mark_dirty()
-
-    # ══════════════════════════════════════════════════════════
-    #  Learning Mode
-    # ══════════════════════════════════════════════════════════
 
     def start_learning(self):
         dlg = LearningSettingsDialog(self.project, self)
@@ -740,10 +694,6 @@ class MainWindow(QMainWindow):
                 self.canvas.centerOn(node.x + self.project.settings.node_width/2, node.y + self.project.settings.node_height/2)
 
 
-# ══════════════════════════════════════════════════════════════
-#  ADDITION FUNCTIONS AND CLASSES FOR IMPORT
-# ══════════════════════════════════════════════════════════════
-
 def remove_json_comments(json_str: str) -> str:
     pattern = r'("(?:\\.|[^"\\])*")|//.*|/\*[\s\S]*?\*/'
     def replacer(match):
@@ -753,7 +703,6 @@ def remove_json_comments(json_str: str) -> str:
     clean = re.sub(pattern, replacer, json_str)
     clean = re.sub(r',(\s*[\]}])', r'\1', clean)
     return clean
-
 
 class ImportTreeDialog(QDialog):
     def __init__(self, parent=None):
@@ -765,7 +714,6 @@ class ImportTreeDialog(QDialog):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-
         lbl = QLabel(tr("import_instructions"))
         lbl.setWordWrap(True)
         layout.addWidget(lbl)
@@ -782,7 +730,6 @@ class ImportTreeDialog(QDialog):
 
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        
         self.btn_import = QPushButton(tr("add_tree_btn"))
         self.btn_import.setFont(QFont("Segoe UI", 10, QFont.Bold))
         self.btn_import.setStyleSheet(
@@ -795,7 +742,6 @@ class ImportTreeDialog(QDialog):
         btn_cancel.setStyleSheet("padding: 10px;")
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(btn_cancel)
-
         layout.addLayout(btn_layout)
 
     def _get_template(self):
@@ -806,8 +752,8 @@ class ImportTreeDialog(QDialog):
     // {tr("import_tpl_root_id")}
     "root_id": "node_1",
     
-    /* 
-       {tr("import_tpl_nodes_desc")}
+    /*
+      {tr("import_tpl_nodes_desc")}
     */
     "nodes": [
         {{
@@ -834,9 +780,8 @@ class ImportTreeDialog(QDialog):
         if not text:
             self.error_lbl.setText(tr("empty_input"))
             return
-
-        clean_text = remove_json_comments(text)
         
+        clean_text = remove_json_comments(text)
         try:
             data = json.loads(clean_text)
         except json.JSONDecodeError as e:
@@ -850,7 +795,7 @@ class ImportTreeDialog(QDialog):
 
         try:
             tree = BasaltTree.from_dict(data)
-            tree.id = new_id() 
+            tree.id = new_id()
             self.imported_tree = tree
             self.accept()
         except Exception as e:
@@ -859,13 +804,11 @@ class ImportTreeDialog(QDialog):
     def _validate(self, data):
         if not isinstance(data, dict):
             return False, tr("invalid_root_object")
-        
         if "title" not in data or not isinstance(data.get("title"), str):
             return False, tr("missing_title_field")
-            
         if "nodes" not in data:
             return False, tr("missing_nodes_field")
-            
+        
         nodes_data = data["nodes"]
         if isinstance(nodes_data, dict):
             nodes_list = list(nodes_data.values())
@@ -873,10 +816,10 @@ class ImportTreeDialog(QDialog):
             nodes_list = nodes_data
         else:
             return False, tr("invalid_nodes_format")
-            
+
         if not nodes_list:
             return False, tr("empty_nodes_list")
-            
+
         node_ids = set()
         for n in nodes_list:
             if not isinstance(n, dict):
@@ -884,7 +827,7 @@ class ImportTreeDialog(QDialog):
             if "id" not in n:
                 return False, tr("missing_node_id")
             node_ids.add(str(n["id"]))
-            
+
         for n in nodes_list:
             for p in n.get("parents", []):
                 if str(p) not in node_ids:
@@ -892,18 +835,16 @@ class ImportTreeDialog(QDialog):
             for c in n.get("children", []):
                 if str(c) not in node_ids:
                     return False, tr("invalid_child_ref", id=n.get('id'), c=c)
-                    
+
         root_id = data.get("root_id")
         if root_id and str(root_id) not in node_ids:
             return False, tr("root_id_not_found", root_id=root_id)
-            
         if not root_id:
             has_root = any(not n.get("parents") for n in nodes_list)
             if not has_root:
                 return False, tr("no_root_node")
-                
-        return True, ""
 
+        return True, ""
 
 class AddParentDialog(QDialog):
     def __init__(self, project: BasaltProject, current_tree_id: str, node_id: str, parent=None):
@@ -919,11 +860,9 @@ class AddParentDialog(QDialog):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-
         self.rb_new = QRadioButton(tr("create_new_parent"))
         self.rb_existing = QRadioButton(tr("select_existing_node"))
         self.rb_new.setChecked(True)
-
         grp = QButtonGroup(self)
         grp.addButton(self.rb_new)
         grp.addButton(self.rb_existing)
@@ -932,7 +871,6 @@ class AddParentDialog(QDialog):
 
         self.node_list = QListWidget()
         self.node_list.setEnabled(False)
-
         self._populate_node_list()
         self.rb_existing.toggled.connect(lambda c: self.node_list.setEnabled(c))
         layout.addWidget(self.node_list)
@@ -952,39 +890,32 @@ class AddParentDialog(QDialog):
 
     def _populate_node_list(self):
         descendants = self._collect_descendants()
-
         for tree in self.project.trees.values():
-            header = QListWidgetItem(f"━━━ {tree.title} ━━━")
+            header = QListWidgetItem(f"─── {tree.title} ───")
             header.setFlags(header.flags() & ~Qt.ItemIsEnabled)
             font = header.font(); font.setBold(True); header.setFont(font)
             self.node_list.addItem(header)
-
             if not tree.root_id:
                 continue
-
             visited = set()
             def add_node(nid, depth=0):
                 if nid in visited or nid not in tree.nodes: return
                 visited.add(nid)
                 n = tree.nodes[nid]
-
                 is_locked = (nid in descendants) or (tree.id != self.current_tree_id)
                 lock_text = ""
                 if nid in descendants:
                     lock_text = tr("locked_descendant")
                 elif tree.id != self.current_tree_id:
                     lock_text = tr("locked_other_tree")
-
                 prefix = "   " * depth
                 item = QListWidgetItem(prefix + n.title + lock_text)
                 item.setData(Qt.UserRole, (tree.id, nid))
                 if is_locked:
                     item.setFlags(item.flags() & ~Qt.ItemIsEnabled)
                 self.node_list.addItem(item)
-
                 for c in n.children:
                     add_node(c, depth + 1)
-
             add_node(tree.root_id)
 
     def _collect_descendants(self) -> set:
@@ -1021,24 +952,19 @@ class AddParentDialog(QDialog):
             self.selected_node_id = node_id
         self.accept()
 
-
 if __name__ == "__main__":
     import sys
     import ctypes
-
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-
     if sys.platform == "win32":
         try:
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
                 "MelomanSharp.Basalt.1.0"
             )
         except Exception:
-            pass  
-
+            pass
     app.setWindowIcon(create_app_icon())
-
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

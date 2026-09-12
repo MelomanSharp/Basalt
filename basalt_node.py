@@ -15,8 +15,8 @@ class LayoutSettings:
     """Display and tree layout settings"""
     h_spacing: int = 40
     v_spacing: int = 60
-    node_width: int = 260
-    node_height: int = 140
+    node_width: int = 300
+    node_height: int = 150
     text_align: str = "left"
     max_parents: int = 1
 
@@ -113,7 +113,7 @@ class Review:
             if self.repetitions == 1: self.interval = 1
             elif self.repetitions == 2: self.interval = 6
             else: self.interval = max(1, round(self.interval * self.ease))
-        self.ease = max(1.3, self.ease + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02)))
+            self.ease = max(1.3, self.ease + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02)))
         self.due = (today + timedelta(days=self.interval)).isoformat()
 
     @classmethod
@@ -174,7 +174,6 @@ class BasaltTree:
     title: str = field(default_factory=lambda: tr("default_tree_title"))
     root_id: str | None = None
     nodes: dict[str, BasaltNode] = field(default_factory=dict)
-
     locus_cam_pos: list[float] = field(default_factory=lambda: [0.0, 15.0, 30.0])
     locus_cam_rot: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
 
@@ -296,13 +295,56 @@ class BasaltTree:
                 return
         self.root_id = None
 
+    # === NEW FEATURE: Reordering siblings ===
+    def get_sibling_info(self, node_id: str):
+        """
+        Returns (parent_id, children_list, index) for the first valid parent.
+        If node has no parent or data is inconsistent, returns None.
+        """
+        node = self.nodes.get(node_id)
+        if not node:
+            return None
+
+        for pid in node.parents:
+            parent = self.nodes.get(pid)
+            if parent is not None and node_id in parent.children:
+                return pid, parent.children, parent.children.index(node_id)
+
+        return None
+
+    def move_child(self, node_id: str, direction: int) -> bool:
+        """
+        Moves node among siblings.
+        direction = -1 (left), +1 (right).
+        Returns True if moved successfully.
+        """
+        info = self.get_sibling_info(node_id)
+        if info is None:
+            return False
+
+        _parent_id, siblings, index = info
+        new_index = index + direction
+
+        if new_index < 0 or new_index >= len(siblings):
+            return False
+
+        siblings[index], siblings[new_index] = siblings[new_index], siblings[index]
+        return True
+
+    def move_child_left(self, node_id: str) -> bool:
+        return self.move_child(node_id, -1)
+
+    def move_child_right(self, node_id: str) -> bool:
+        return self.move_child(node_id, 1)
+    # ========================================
+
     def layout_tree(self, settings: LayoutSettings):
         if not self.root_id: return
         w = settings.node_width
         h = settings.node_height
         h_gap = settings.h_spacing
         v_gap = settings.v_spacing
-        
+
         widths = {}
         def calc_width(nid, visited=None):
             if visited is None: visited = set()
@@ -315,33 +357,26 @@ class BasaltTree:
             children_width = sum(calc_width(c, visited) for c in node.children) + h_gap * (len(node.children) - 1)
             widths[nid] = max(w, children_width)
             return widths[nid]
-        
+
         calc_width(self.root_id)
-        
-        # Recursive function to assign positions based on the CENTER of the node
+
         def assign_pos(nid, center_x, y, visited=None):
             if visited is None: visited = set()
             if nid in visited: return
             visited.add(nid)
             node = self.nodes[nid]
-            
-            # Center the node horizontally at center_x
             node.x = center_x - w / 2
             node.y = y
-            
             if node.children:
                 total_children_w = sum(widths.get(c, w) for c in node.children) + h_gap * (len(node.children) - 1)
-                # The left edge of the children's bounding box
                 start_x = center_x - total_children_w / 2
                 curr_x = start_x
                 for c in node.children:
                     c_width = widths.get(c, w)
-                    # The center of the child's bounding box
                     child_center_x = curr_x + c_width / 2
                     assign_pos(c, child_center_x, y + h + v_gap, visited)
                     curr_x += c_width + h_gap
-                    
-        # Root is perfectly centered at x=0, y=0
+
         assign_pos(self.root_id, 0, 0)
 
     def to_dict(self) -> dict[str, Any]:
@@ -356,12 +391,15 @@ class BasaltTree:
         raw_nodes = data.get("nodes", [])
         if isinstance(raw_nodes, dict): raw_nodes = raw_nodes.values()
         tree.nodes = {n.id: n for n in (BasaltNode.from_dict(r) for r in raw_nodes)}
+
         for n in tree.nodes.values():
             n.children = [c for c in n.children if c in tree.nodes]
             n.parents = [p for p in n.parents if p in tree.nodes]
-            for p in n.parents:
-                if n.id not in tree.nodes[p].children:
-                    tree.nodes[p].children.append(n.id)
+
+        for p in n.parents:
+            if n.id not in tree.nodes[p].children:
+                tree.nodes[p].children.append(n.id)
+
         if tree.root_id not in tree.nodes:
             roots = [n.id for n in tree.nodes.values() if not n.parents]
             tree.root_id = roots[0] if roots else None
@@ -401,20 +439,16 @@ class BasaltProject:
         import random
         today = date.today().isoformat()
         tree_nodes: list[tuple["BasaltTree", list["BasaltNode"]]] = []
-
         for tree in self.trees.values():
             config = self.learning.get_tree_config(tree.id)
             if not config.enabled:
                 continue
-
             nodes = [n for n in tree.nodes.values() if n.review.due <= today]
             if not nodes:
                 continue
-
             if config.mode == "sequential":
                 ordered = []
                 visited = set()
-
                 def dfs(nid):
                     if nid in visited or nid not in tree.nodes: return
                     visited.add(nid)
@@ -423,13 +457,11 @@ class BasaltProject:
                         ordered.append(n)
                     for c in n.children:
                         dfs(c)
-
                 if tree.root_id:
                     dfs(tree.root_id)
                 nodes = ordered
             else:
                 random.shuffle(nodes)
-
             tree_nodes.append((tree, nodes))
 
         if self.learning.random_order_trees:

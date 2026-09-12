@@ -2,29 +2,28 @@
 
 class I18n:
     """Simple dictionary-based localization singleton."""
-    
     _instance = None
     _current_lang = "en"
-    
+
     TRANSLATIONS = {
         "en": {
             # Main Window
             "app_title": "Basalt - Knowledge Tree",
             "new_db": "New Database",
-            "my_trees": "📚 My Trees",
+            "my_trees": "🌳 My Trees",
             "open": "📂 Open...",
             "save": "💾 Save",
             "save_as": "💾 Save As...",
             "export": "📤 Export...",
-            "new_tree": "➕ New Tree",
+            "new_tree": "🌱 New Tree",
             "import_tree": "📥 Import Tree",
             "rename_tree": "✏️ Rename",
-            "delete_tree": "🗑 Delete Tree",
+            "delete_tree": "🗑️ Delete Tree",
             "auto_layout": "📐 Auto Layout",
             "view_settings": "⚙️ View",
             "start_learning": "🧠 Start Learning",
             "stop_learning": "⏹ Stop",
-            
+
             # Dialogs & Messages
             "success": "Success",
             "error": "Error",
@@ -39,24 +38,24 @@ class I18n:
             "dont_save_btn": "Don't Save",
             "cannot_be_parent_title": "Cannot",
             "cross_tree_move_title": "Limitation",
-            
+
             # File dialogs
             "open_db_title": "Open Knowledge Base",
             "save_db_title": "Save Knowledge Base",
             "export_db_title": "Export Knowledge Base",
             "json_filter": "JSON (*.json)",
-            
+
             # Messages
             "db_loaded": "Database «{name}» loaded.",
             "db_exported": "Database exported to:\n{path}",
             "save_failed": "Failed to save:\n{e}",
             "open_failed": "Failed to open file:\n{e}",
             "saved_msg": "💾 Saved: {path}",
-            
+
             # Welcome
             "welcome_title": "Welcome to Basalt!",
-            "welcome_text": "You don't have a saved knowledge base yet.\n\nCreate your first tree via the «➕ New Tree» button or load an existing database via «📂 Open...».",
-            
+            "welcome_text": "You don't have a saved knowledge base yet.\nCreate your first tree via the «🌱 New Tree» button or load an existing database via «📂 Open...».",
+
             # Tree operations
             "select_tree_first": "Please select a tree first.",
             "rename_tree_title": "Rename Tree",
@@ -67,40 +66,40 @@ class I18n:
             "tree_exists_text": "A tree named «{title}» already exists in the database.\nLinks like [[...]] might not work correctly.\nAdd anyway?",
             "tree_imported": "Tree «{title}» successfully imported!",
             "new_tree_created_auto": "Tree «{title}» did not exist and was created automatically.",
-            
+
             # Node operations
             "select_node_first": "Please select a node first.",
             "node_not_found": "Node not found in any tree.",
             "delete_node_title": "Delete Node",
             "delete_node_prompt": "How to delete the selected node?",
-            "delete_node_info": "<b>Node only</b> — its children will be attached to its parents.<br><b>Entire branch</b> — the node along with all its descendants.",
+            "delete_node_info": "<b>Node only</b> – its children will be attached to its parents.<br><b>Entire branch</b> – the node along with all its descendants.",
             "node_only_btn": "Node only",
             "entire_branch_btn": "Entire branch",
             "cannot_be_parent": "This node cannot be made a parent: it is already a descendant of the selected node (would create a cycle).",
-            
+
             # Add Parent Dialog
             "add_parent_title": "Add Parent Node",
-            "create_new_parent": "➕ Create new parent node",
-            "select_existing_node": "🔎 Select existing node",
+            "create_new_parent": "🌱 Create new parent node",
+            "select_existing_node": "🔍 Select existing node",
             "locked_descendant": " (cannot: descendant)",
             "locked_other_tree": " (only within current tree)",
             "select_available_node": "Please select an available node from the list.",
             "cross_tree_move": "Moving nodes between trees is not supported yet.\nPlease select a node in the current tree.",
-            
+
             # Learning Mode
             "learning_started_title": "Learning Mode Started",
             "learning_started_text": "Cards will pop up every {minutes} min.\nGo about your business — the app runs in the background.",
             "learning_stopped": "Background mode stopped.",
             "learning_settings_title": "Learning Mode Settings",
             "no_cards_title": "No Cards",
-            "no_cards_text": "No cards for review.\n\nPossible reasons:\n• All cards reviewed for today\n• Trees disabled in settings\n• No trees in project",
-            
+            "no_cards_text": "No cards for review.\nPossible reasons:\n• All cards reviewed for today\n• Trees disabled in settings\n• No trees in project",
+
             # Notification Dialog
-            "review_title": "Basalt — Review",
+            "review_title": "Basalt – Review",
             "unknown_tree": "Unknown Tree",
             "spaced_repetition": "🧠 Spaced Repetition",
             "node_deleted_moved": "⚠️ This node was deleted or moved during learning.",
-            "in_tree_btn": "📂 In Tree",
+            "in_tree_btn": "🌳 In Tree",
             "in_tree_tooltip": "Open this node in the main window for editing",
             "show_answer": "Show Answer (Space)",
             "again_1": "Again (1)",
@@ -110,7 +109,7 @@ class I18n:
             "explanation": "Explanation",
             "no_explanation": "<i>(No explanation)</i>",
             "child_nodes": "Child nodes:",
-            
+
             # Settings Dialog (Learning)
             "common_settings": "Common Settings",
             "show_interval": "Show interval:",
@@ -132,11 +131,11 @@ class I18n:
             "show_children_notes_tooltip": "If disabled — only child node titles are shown.\nClicking a title opens that node's card out of turn.",
             "tree_specific_settings": "Tree-specific Settings",
             "test_card": "🧪 Test Card",
-            "start_learning_btn": "🚀 Start Learning",
+            "start_learning_btn": "▶️ Start Learning",
             "random": "Random",
             "sequential": "Sequential",
             "sequential_tooltip": "Main branch top-down first, then branches.\nNodes of one tree are shown consecutively.",
-            
+
             # Settings Dialog (View)
             "view_settings_title": "Display Settings",
             "node_sizes": "Node Sizes",
@@ -153,7 +152,7 @@ class I18n:
             "structure": "Structure",
             "max_parents": "Max parents per node:",
             "max_parents_tooltip": "Maximum parents a single node can have.\nValue 1 = strict tree structure.",
-            
+
             # Import Dialog
             "import_json_title": "Import Tree from JSON",
             "import_instructions": "Paste the JSON code of the tree below. You can use the template as a base.\nComments (// and /* */) and trailing commas are supported — they will be automatically cleaned.",
@@ -173,7 +172,7 @@ class I18n:
             "invalid_child_ref": "Node '{id}' references non-existent child '{c}'.",
             "root_id_not_found": "Specified root_id '{root_id}' not found among nodes.",
             "no_root_node": "root_id not specified, and there are no nodes without parents.",
-            
+
             # Import Template
             "import_tpl_title": "Name of your tree",
             "import_tpl_root_id": "ID of the root node (must match one of the ids in the nodes list)",
@@ -183,117 +182,121 @@ class I18n:
             "import_tpl_clarifying": "Clarifying question",
             "import_tpl_details": "Details that develop the theme.",
             "import_tpl_coords": "Coordinates (optional)",
-            
+
             # Default names
             "default_node_title": "New Node",
             "default_tree_title": "New Tree",
             "default_root_title": "Main Idea",
             "default_new_child": "New Child Node",
             "default_new_parent": "New Parent",
-            
+
             # Node UI
-            "parent_btn": "🔼 Parent",
-            "child_btn": "➕ Child",
-            "delete_btn": "❌ Delete",
+            "parent_btn": "👴 Parent",
+            "child_btn": "👶 Child",
+            "delete_btn": "🗑️ Delete",
+            "move_left_btn": "◀ Left",
+            "move_right_btn": "Right ▶",
+            "move_left_tooltip": "Move this node left among its siblings",
+            "move_right_tooltip": "Move this node right among its siblings",
             "no_note_placeholder": "<i style='color: #9ca3af;'>No note (click to add)</i>",
-            
+
             # I18n UI
             "language": "Language",
         },
         "ru": {
             "app_title": "Basalt - Дерево знаний",
             "new_db": "Новая база",
-            "my_trees": "📚 Мои деревья",
+            "my_trees": "🌳 Мои деревья",
             "open": "📂 Открыть...",
             "save": "💾 Сохранить",
             "save_as": "💾 Сохранить как...",
             "export": "📤 Экспорт...",
-            "new_tree": "➕ Новое дерево",
+            "new_tree": "🌱 Новое дерево",
             "import_tree": "📥 Импорт дерева",
             "rename_tree": "✏️ Переименовать",
-            "delete_tree": "🗑 Удалить дерево",
-            "auto_layout": "📐 Выровнять",
+            "delete_tree": "🗑️ Удалить дерево",
+            "auto_layout": "📐 Авто-раскладка",
             "view_settings": "⚙️ Вид",
             "start_learning": "🧠 Начать обучение",
             "stop_learning": "⏹ Остановить",
-            
+
             "success": "Успех",
             "error": "Ошибка",
             "warning": "Предупреждение",
             "cancel": "Отмена",
             "ok": "OK",
             "apply": "💾 Применить",
-            "unsaved_changes": "Несохранённые изменения",
-            "unsaved_changes_text": "В базе «{name}» есть несохранённые изменения.",
+            "unsaved_changes": "Несохраненные изменения",
+            "unsaved_changes_text": "В базе «{name}» есть несохраненные изменения.",
             "save_before_exit": "Сохранить их перед выходом?",
             "save_btn": "💾 Сохранить",
             "dont_save_btn": "Не сохранять",
             "cannot_be_parent_title": "Нельзя",
             "cross_tree_move_title": "Ограничение",
-            
+
             "open_db_title": "Открыть базу знаний",
             "save_db_title": "Сохранить базу знаний",
             "export_db_title": "Экспортировать базу знаний",
             "json_filter": "JSON (*.json)",
-            
+
             "db_loaded": "База «{name}» загружена.",
             "db_exported": "База экспортирована в:\n{path}",
             "save_failed": "Не удалось сохранить:\n{e}",
             "open_failed": "Не удалось открыть файл:\n{e}",
             "saved_msg": "💾 Сохранено: {path}",
-            
+
             "welcome_title": "Добро пожаловать в Basalt!",
-            "welcome_text": "У вас пока нет сохранённой базы знаний.\n\nСоздайте первое дерево через кнопку «➕ Новое дерево» или загрузите существующую базу через «📂 Открыть...».",
-            
+            "welcome_text": "У вас пока нет сохраненной базы знаний.\nСоздайте первое дерево через кнопку «🌱 Новое дерево» или загрузите существующую базу через «📂 Открыть...».",
+
             "select_tree_first": "Сначала выберите дерево.",
-            "rename_tree_title": "Переименовать дерево",
+            "rename_tree_title": "Переименование дерева",
             "rename_tree_prompt": "Новое название:",
-            "delete_tree_title": "Удалить дерево",
+            "delete_tree_title": "Удаление дерева",
             "delete_tree_confirm": "Удалить дерево «{title}» и все его узлы?\nЭто действие нельзя отменить.",
             "tree_already_exists": "Дерево с таким именем уже существует",
-            "tree_exists_text": "Дерево с названием «{title}» уже есть в базе.\nСсылки вида [[...]] могут работать некорректно.\nВсё равно добавить?",
+            "tree_exists_text": "Дерево с названием «{title}» уже есть в базе.\nСсылки вида [[...]] могут работать некорректно.\nВсе равно добавить?",
             "tree_imported": "Дерево «{title}» успешно импортировано!",
             "new_tree_created_auto": "Дерево «{title}» не существовало и было создано автоматически.",
-            
+
             "select_node_first": "Сначала выберите узел.",
             "node_not_found": "Узел не найден ни в одном дереве.",
             "delete_node_title": "Удаление узла",
             "delete_node_prompt": "Как удалить выбранный узел?",
-            "delete_node_info": "<b>Только узел</b> — его дети будут подвешены к его родителям.<br><b>Всю ветку</b> — узел вместе со всеми потомками.",
+            "delete_node_info": "<b>Только узел</b> – его дети будут подвешены к его родителям.<br><b>Всю ветку</b> – узел вместе со всеми потомками.",
             "node_only_btn": "Только узел",
             "entire_branch_btn": "Всю ветку",
             "cannot_be_parent": "Этот узел нельзя сделать родителем: он сам является потомком выбранного узла (образуется цикл).",
-            
+
             "add_parent_title": "Добавить родительский узел",
-            "create_new_parent": "➕ Создать новый родительский узел",
-            "select_existing_node": "🔎 Выбрать существующий узел",
+            "create_new_parent": "🌱 Создать новый родительский узел",
+            "select_existing_node": "🔍 Выбрать существующий узел",
             "locked_descendant": " (нельзя: потомок)",
             "locked_other_tree": " (только внутри дерева)",
             "select_available_node": "Выберите доступный узел из списка.",
             "cross_tree_move": "Перемещение узлов между деревьями пока не поддерживается.\nВыберите узел в текущем дереве.",
-            
+
             "learning_started_title": "Режим обучения запущен",
             "learning_started_text": "Карточки будут всплывать каждые {minutes} мин.\nЗанимайтесь своими делами — приложение работает в фоне.",
             "learning_stopped": "Фоновый режим остановлен.",
             "learning_settings_title": "Настройки режима обучения",
             "no_cards_title": "Нет карточек",
-            "no_cards_text": "Нет карточек для повторения.\n\nВозможные причины:\n• Все карточки уже повторены на сегодня\n• Деревья отключены в настройках\n• Нет деревьев в проекте",
-            
-            "review_title": "Basalt — Повторение",
+            "no_cards_text": "Нет карточек для повторения.\nВозможные причины:\n• Все карточки уже повторены на сегодня\n• Деревья отключены в настройках\n• Нет деревьев в проекте",
+
+            "review_title": "Basalt – Повторение",
             "unknown_tree": "Неизвестное дерево",
             "spaced_repetition": "🧠 Интервальное повторение",
             "node_deleted_moved": "⚠️ Этот узел был удален или перемещен во время обучения.",
-            "in_tree_btn": "📂 В дереве",
+            "in_tree_btn": "🌳 В дереве",
             "in_tree_tooltip": "Открыть этот узел в основном окне для редактирования",
             "show_answer": "Показать ответ (Пробел)",
             "again_1": "Снова (1)",
             "hard_2": "Тяжело (2)",
             "good_3": "Хорошо (3)",
             "easy_5": "Легко (5)",
-            "explanation": "Пояснение",
-            "no_explanation": "<i>(Пояснение отсутствует)</i>",
+            "explanation": "Объяснение",
+            "no_explanation": "<i>(Объяснение отсутствует)</i>",
             "child_nodes": "Дочерние узлы:",
-            
+
             "common_settings": "Общие настройки",
             "show_interval": "Интервал показов:",
             "min_suffix": " мин",
@@ -303,7 +306,7 @@ class I18n:
             "font": "Шрифт:",
             "font_size": "Размер шрифта:",
             "pt_suffix": " pt",
-            "window_size": "Размеры окна:",
+            "window_size": "Размер окна:",
             "px_suffix": " px",
             "screen_position": "Позиция на экране:",
             "pos_center": "По центру",
@@ -311,14 +314,14 @@ class I18n:
             "pos_top_right": "Сверху справа",
             "pos_top_left": "Сверху слева",
             "show_children_notes": "Показывать текст дочерних узлов сразу",
-            "show_children_notes_tooltip": "Если выключено — показываются только заголовки дочерних узлов.\nКлик по заголовку открывает карточку этого узла вне очереди.",
+            "show_children_notes_tooltip": "Если выключено — показываются только заголовки дочерних узлов.\nКлик по заголовку открывает карточку того узла вне очереди.",
             "tree_specific_settings": "Настройки для каждого дерева отдельно",
             "test_card": "🧪 Тест карточки",
-            "start_learning_btn": "🚀 Начать обучение",
+            "start_learning_btn": "▶️ Начать обучение",
             "random": "Случайно",
             "sequential": "Последовательно",
             "sequential_tooltip": "Сначала основная ветка сверху вниз, затем ответвления. Узлы одного дерева показываются подряд.",
-            
+
             "view_settings_title": "Настройки отображения",
             "node_sizes": "Размеры узлов",
             "width": "Ширина:",
@@ -333,8 +336,8 @@ class I18n:
             "align_right": "Справа",
             "structure": "Структура",
             "max_parents": "Макс. родителей у узла:",
-            "max_parents_tooltip": "Максимум родителей, которые может иметь один узел.\nЗначение 1 = строгая древовидная структура.",
-            
+            "max_parents_tooltip": "Максимум родителей, которое может иметь один узел.\nЗначение 1 = строгая древовидная структура.",
+
             "import_json_title": "Импорт дерева из JSON",
             "import_instructions": "Вставьте JSON-код дерева ниже. Вы можете использовать шаблон в качестве основы.\nПоддерживаются комментарии (// и /* */), а также висячие запятые — они будут автоматически очищены.",
             "add_tree_btn": "Добавить дерево",
@@ -353,47 +356,50 @@ class I18n:
             "invalid_child_ref": "Узел '{id}' ссылается на несуществующего потомка '{c}'.",
             "root_id_not_found": "Указанный root_id '{root_id}' не найден среди узлов.",
             "no_root_node": "Не указан root_id, и нет ни одного узла без родителей.",
-            
+
             "import_tpl_title": "Название вашего дерева",
             "import_tpl_root_id": "ID корневого узла (должен совпадать с одним из id в списке nodes)",
             "import_tpl_nodes_desc": "Список всех узлов дерева. Каждый узел должен иметь уникальный id.\nparents и children — это массивы id связанных узлов.",
-            "import_tpl_main_q": "Главный вопрос или концепция. Их рекомендуется формулировать так, чтобы они были понятны независимо от других узлов...",
+            "import_tpl_main_q": "Главный вопрос или концепция. Рекомендуется формулировать их так, чтобы они были понятны независимо от других узлов...",
             "import_tpl_answer": "Ответ или подробное описание.",
             "import_tpl_clarifying": "Уточняющий вопрос",
             "import_tpl_details": "Детали, которые развивают тему.",
-            "import_tpl_coords": "Координата (можно не указывать)",
-            
+            "import_tpl_coords": "Координаты (можно не указывать)",
+
             "default_node_title": "Новый узел",
             "default_tree_title": "Новое дерево",
             "default_root_title": "Главная идея",
             "default_new_child": "Новый дочерний узел",
             "default_new_parent": "Новый родитель",
-            
-            "parent_btn": "🔼 Родительский",
-            "child_btn": "➕ Дочерний",
-            "delete_btn": "❌ Удалить",
+
+            "parent_btn": "👴 Родительский",
+            "child_btn": "👶 Дочерний",
+            "delete_btn": "🗑️ Удалить",
+            "move_left_btn": "◀ Влево",
+            "move_right_btn": "Вправо ▶",
+            "move_left_tooltip": "Переместить узел влево среди соседних узлов",
+            "move_right_tooltip": "Переместить узел вправо среди соседних узлов",
             "no_note_placeholder": "<i style='color: #9ca3af;'>Нет пояснения (кликните, чтобы добавить)</i>",
-            
+
             "language": "Язык",
         },
         "zh": {
             # Main Window
             "app_title": "Basalt - 知识树",
             "new_db": "新建数据库",
-            "my_trees": "📚 我的树",
+            "my_trees": "🌳 我的树",
             "open": "📂 打开...",
             "save": "💾 保存",
             "save_as": "💾 另存为...",
             "export": "📤 导出...",
-            "new_tree": "➕ 新建树",
+            "new_tree": "🌱 新建树",
             "import_tree": "📥 导入树",
             "rename_tree": "✏️ 重命名",
-            "delete_tree": "🗑 删除树",
+            "delete_tree": "🗑️ 删除树",
             "auto_layout": "📐 自动布局",
             "view_settings": "⚙️ 视图",
             "start_learning": "🧠 开始学习",
             "stop_learning": "⏹ 停止",
-            
             # Dialogs & Messages
             "success": "成功",
             "error": "错误",
@@ -408,24 +414,20 @@ class I18n:
             "dont_save_btn": "不保存",
             "cannot_be_parent_title": "无法操作",
             "cross_tree_move_title": "限制",
-            
             # File dialogs
             "open_db_title": "打开知识库",
             "save_db_title": "保存知识库",
             "export_db_title": "导出知识库",
             "json_filter": "JSON (*.json)",
-            
             # Messages
             "db_loaded": "数据库 «{name}» 已加载。",
             "db_exported": "数据库已导出到：\n{path}",
             "save_failed": "保存失败：\n{e}",
             "open_failed": "打开文件失败：\n{e}",
             "saved_msg": "💾 已保存：{path}",
-            
             # Welcome
             "welcome_title": "欢迎使用 Basalt！",
-            "welcome_text": "您还没有保存的知识库。\n\n通过 «➕ 新建树» 按钮创建第一棵树，或通过 «📂 打开...» 加载现有数据库。",
-            
+            "welcome_text": "您还没有保存的知识库。\n通过 «🌱 新建树» 按钮创建第一棵树，或通过 «📂 打开...» 加载现有数据库。",
             # Tree operations
             "select_tree_first": "请先选择一棵树。",
             "rename_tree_title": "重命名树",
@@ -436,40 +438,36 @@ class I18n:
             "tree_exists_text": "数据库中已存在名为 «{title}» 的树。\n[[...]] 之类的链接可能无法正常工作。\n仍要添加吗？",
             "tree_imported": "树 «{title}» 成功导入！",
             "new_tree_created_auto": "树 «{title}» 不存在，已自动创建。",
-            
             # Node operations
             "select_node_first": "请先选择一个节点。",
             "node_not_found": "在任何树中都找不到该节点。",
             "delete_node_title": "删除节点",
             "delete_node_prompt": "如何删除所选节点？",
-            "delete_node_info": "<b>仅节点</b> — 其子节点将挂到其父节点上。<br><b>整个分支</b> — 该节点及其所有后代。",
+            "delete_node_info": "<b>仅节点</b> – 其子节点将连接到其父节点。<br><b>整个分支</b> – 该节点及其所有后代。",
             "node_only_btn": "仅节点",
             "entire_branch_btn": "整个分支",
             "cannot_be_parent": "该节点不能作为父节点：它已经是所选节点的后代（会形成循环）。",
-            
             # Add Parent Dialog
             "add_parent_title": "添加父节点",
-            "create_new_parent": "➕ 创建新的父节点",
-            "select_existing_node": "🔎 选择现有节点",
+            "create_new_parent": "🌱 创建新父节点",
+            "select_existing_node": "🔍 选择现有节点",
             "locked_descendant": "（不可：后代）",
             "locked_other_tree": "（仅限当前树内）",
             "select_available_node": "请从列表中选择一个可用节点。",
             "cross_tree_move": "暂不支持在树之间移动节点。\n请选择当前树中的节点。",
-            
             # Learning Mode
             "learning_started_title": "学习模式已启动",
-            "learning_started_text": "卡片将每 {minutes} 分钟弹出一次。\n您可以去忙其他事情——应用在后台运行。",
+            "learning_started_text": "卡片将每 {minutes} 分钟弹出一次。\n您可以忙其他事——应用程序在后台运行。",
             "learning_stopped": "后台模式已停止。",
             "learning_settings_title": "学习模式设置",
             "no_cards_title": "没有卡片",
-            "no_cards_text": "没有需要复习的卡片。\n\n可能原因：\n• 今天的卡片都已复习完\n• 设置中禁用了树\n• 项目中没有树",
-            
+            "no_cards_text": "没有需要复习的卡片。\n可能原因：\n• 今天的卡片都已复习完\n• 设置中禁用了树\n• 项目中没有树",
             # Notification Dialog
-            "review_title": "Basalt — 复习",
+            "review_title": "Basalt – 复习",
             "unknown_tree": "未知树",
             "spaced_repetition": "🧠 间隔重复",
             "node_deleted_moved": "⚠️ 此节点在学习期间被删除或移动。",
-            "in_tree_btn": "📂 在树中",
+            "in_tree_btn": "🌳 在树中",
             "in_tree_tooltip": "在主窗口中打开此节点进行编辑",
             "show_answer": "显示答案（空格）",
             "again_1": "重来（1）",
@@ -479,7 +477,6 @@ class I18n:
             "explanation": "解释",
             "no_explanation": "<i>（无解释）</i>",
             "child_nodes": "子节点：",
-            
             # Settings Dialog (Learning)
             "common_settings": "通用设置",
             "show_interval": "显示间隔：",
@@ -498,14 +495,13 @@ class I18n:
             "pos_top_right": "右上角",
             "pos_top_left": "左上角",
             "show_children_notes": "立即显示子节点文本",
-            "show_children_notes_tooltip": "如果关闭——只显示子节点标题。\n点击标题可在顺序外打开该节点的卡片。",
-            "tree_specific_settings": "各树单独设置",
+            "show_children_notes_tooltip": "如果关闭——只显示子节点标题。\n点击标题可按顺序打开该节点的卡片。",
+            "tree_specific_settings": "树特定设置",
             "test_card": "🧪 测试卡片",
-            "start_learning_btn": "🚀 开始学习",
+            "start_learning_btn": "▶️ 开始学习",
             "random": "随机",
             "sequential": "顺序",
-            "sequential_tooltip": "先主分支从上到下，然后分支。\n同一棵树的节点连续显示。",
-            
+            "sequential_tooltip": "先主分支从上到下，然后是分支。同一棵树的节点连续显示。",
             # Settings Dialog (View)
             "view_settings_title": "显示设置",
             "node_sizes": "节点大小",
@@ -521,11 +517,10 @@ class I18n:
             "align_right": "右对齐",
             "structure": "结构",
             "max_parents": "每个节点的最大父节点数：",
-            "max_parents_tooltip": "单个节点可以拥有的最大父节点数。\n值为 1 = 严格的树形结构。",
-            
+            "max_parents_tooltip": "一个节点可以拥有的最大父节点数。\n值为 1 = 严格的树形结构。",
             # Import Dialog
             "import_json_title": "从 JSON 导入树",
-            "import_instructions": "在下方粘贴树的 JSON 代码。您可以使用模板作为基础。\n支持注释（// 和 /* */）以及尾随逗号——它们将被自动清理。",
+            "import_instructions": "在下方粘贴树的 JSON 代码。您可以使用模板作为基础。\n支持注释（// 和 /* */）以及尾随逗号——它们将被自动清除。",
             "add_tree_btn": "添加树",
             "empty_input": "输入为空。",
             "json_syntax_error": "JSON 语法错误：{msg}（第 {lineno} 行，第 {colno} 列）。",
@@ -542,7 +537,6 @@ class I18n:
             "invalid_child_ref": "节点 '{id}' 引用了不存在的子节点 '{c}'。",
             "root_id_not_found": "在节点中未找到指定的 root_id '{root_id}'。",
             "no_root_node": "未指定 root_id，且没有无父节点的节点。",
-            
             # Import Template
             "import_tpl_title": "树的名称",
             "import_tpl_root_id": "根节点的 ID（必须与节点列表中的某个 id 匹配）",
@@ -552,20 +546,17 @@ class I18n:
             "import_tpl_clarifying": "澄清问题",
             "import_tpl_details": "展开主题的细节。",
             "import_tpl_coords": "坐标（可选）",
-            
             # Default names
             "default_node_title": "新节点",
             "default_tree_title": "新树",
-            "default_root_title": "主要思想",
+            "default_root_title": "主要想法",
             "default_new_child": "新子节点",
             "default_new_parent": "新父节点",
-            
             # Node UI
-            "parent_btn": "🔼 父节点",
-            "child_btn": "➕ 子节点",
-            "delete_btn": "❌ 删除",
+            "parent_btn": "👴 父节点",
+            "child_btn": "👶 子节点",
+            "delete_btn": "🗑️ 删除",
             "no_note_placeholder": "<i style='color: #9ca3af;'>无笔记（点击添加）</i>",
-            
             # I18n UI
             "language": "语言",
         },
@@ -573,20 +564,19 @@ class I18n:
             # Main Window
             "app_title": "Basalt - Дерево знань",
             "new_db": "Нова база",
-            "my_trees": "📚 Мої дерева",
+            "my_trees": "🌳 Мої дерева",
             "open": "📂 Відкрити...",
             "save": "💾 Зберегти",
             "save_as": "💾 Зберегти як...",
             "export": "📤 Експорт...",
-            "new_tree": "➕ Нове дерево",
+            "new_tree": "🌱 Нове дерево",
             "import_tree": "📥 Імпорт дерева",
             "rename_tree": "✏️ Перейменувати",
-            "delete_tree": "🗑 Видалити дерево",
-            "auto_layout": "📐 Авторозкладка",
+            "delete_tree": "🗑️ Видалити дерево",
+            "auto_layout": "📐 Авто-розкладка",
             "view_settings": "⚙️ Вигляд",
             "start_learning": "🧠 Почати навчання",
             "stop_learning": "⏹ Зупинити",
-            
             # Dialogs & Messages
             "success": "Успіх",
             "error": "Помилка",
@@ -601,68 +591,60 @@ class I18n:
             "dont_save_btn": "Не зберігати",
             "cannot_be_parent_title": "Не можна",
             "cross_tree_move_title": "Обмеження",
-            
             # File dialogs
             "open_db_title": "Відкрити базу знань",
             "save_db_title": "Зберегти базу знань",
             "export_db_title": "Експортувати базу знань",
             "json_filter": "JSON (*.json)",
-            
             # Messages
             "db_loaded": "Базу «{name}» завантажено.",
             "db_exported": "Базу експортовано до:\n{path}",
             "save_failed": "Не вдалося зберегти:\n{e}",
             "open_failed": "Не вдалося відкрити файл:\n{e}",
             "saved_msg": "💾 Збережено: {path}",
-            
             # Welcome
             "welcome_title": "Ласкаво просимо до Basalt!",
-            "welcome_text": "У вас ще немає збереженої бази знань.\n\nСтворіть перше дерево за допомогою кнопки «➕ Нове дерево» або завантажте наявну базу через «📂 Відкрити...».",
-            
+            "welcome_text": "У вас ще немає збереженої бази знань.\nСтворіть перше дерево за допомогою кнопки «🌱 Нове дерево» або завантажте наявну базу через «📂 Відкрити...».",
             # Tree operations
             "select_tree_first": "Спочатку виберіть дерево.",
-            "rename_tree_title": "Перейменувати дерево",
+            "rename_tree_title": "Перейменування дерева",
             "rename_tree_prompt": "Нова назва:",
-            "delete_tree_title": "Видалити дерево",
+            "delete_tree_title": "Видалення дерева",
             "delete_tree_confirm": "Видалити дерево «{title}» та всі його вузли?\nЦю дію неможливо скасувати.",
             "tree_already_exists": "Дерево з такою назвою вже існує",
             "tree_exists_text": "Дерево з назвою «{title}» вже є в базі.\nПосилання виду [[...]] можуть працювати некоректно.\nВсе одно додати?",
             "tree_imported": "Дерево «{title}» успішно імпортовано!",
             "new_tree_created_auto": "Дерево «{title}» не існувало і було створено автоматично.",
-            
             # Node operations
             "select_node_first": "Спочатку виберіть вузол.",
             "node_not_found": "Вузол не знайдено в жодному дереві.",
             "delete_node_title": "Видалення вузла",
             "delete_node_prompt": "Як видалити вибраний вузол?",
-            "delete_node_info": "<b>Тільки вузол</b> — його дочірні вузли буде приєднано до його батьків.<br><b>Усю гілку</b> — вузол разом з усіма нащадками.",
+            "delete_node_info": "<b>Тільки вузол</b> – його дочірні вузли будуть приєднані до його батьківських.<br><b>Всю гілку</b> – вузол разом з усіма нащадками.",
             "node_only_btn": "Тільки вузол",
-            "entire_branch_btn": "Усю гілку",
-            "cannot_be_parent": "Цей вузол не можна зробити батьківським: він сам є нащадком вибраного вузла (утвориться цикл).",
-            
+            "entire_branch_btn": "Всю гілку",
+            "cannot_be_parent": "Цей вузол не можна зробити батьківським: він сам є нащадком вибраного вузла (утворюється цикл).",
             # Add Parent Dialog
             "add_parent_title": "Додати батьківський вузол",
-            "create_new_parent": "➕ Створити новий батьківський вузол",
-            "select_existing_node": "🔎 Вибрати наявний вузол",
+            "create_new_parent": "🌱 Створити новий батьківський вузол",
+            "select_existing_node": "🔍 Вибрати наявний вузол",
             "locked_descendant": " (не можна: нащадок)",
             "locked_other_tree": " (тільки в межах поточного дерева)",
             "select_available_node": "Будь ласка, виберіть доступний вузол зі списку.",
             "cross_tree_move": "Переміщення вузлів між деревами поки що не підтримується.\nВиберіть вузол у поточному дереві.",
-            
             # Learning Mode
             "learning_started_title": "Режим навчання запущено",
-            "learning_started_text": "Картки з'являтимуться кожні {minutes} хв.\nЗаймайтеся своїми справами — застосунок працює у фоновому режимі.",
+            "learning_started_text": "Картки з'являтимуться кожні {minutes} хв.\nЗаймайтеся своїми справами — додаток працює у фоні.",
             "learning_stopped": "Фоновий режим зупинено.",
             "learning_settings_title": "Налаштування режиму навчання",
             "no_cards_title": "Немає карток",
-            "no_cards_text": "Немає карток для повторення.\n\nМожливі причини:\n• Усі картки на сьогодні вже повторено\n• Дерева вимкнено в налаштуваннях\n• Немає дерев у проєкті",
-            
+            "no_cards_text": "Немає карток для повторення.\nМожливі причини:\n• Усі картки на сьогодні вже повторено\n• Дерева вимкнено в налаштуваннях\n• Немає дерев у проекті",
             # Notification Dialog
-            "review_title": "Basalt — Повторення",
+            "review_title": "Basalt – Повторення",
             "unknown_tree": "Невідоме дерево",
             "spaced_repetition": "🧠 Інтервальне повторення",
             "node_deleted_moved": "⚠️ Цей вузол було видалено або переміщено під час навчання.",
-            "in_tree_btn": "📂 У дереві",
+            "in_tree_btn": "🌳 У дереві",
             "in_tree_tooltip": "Відкрити цей вузол у головному вікні для редагування",
             "show_answer": "Показати відповідь (Пробіл)",
             "again_1": "Знову (1)",
@@ -672,7 +654,6 @@ class I18n:
             "explanation": "Пояснення",
             "no_explanation": "<i>(Пояснення відсутнє)</i>",
             "child_nodes": "Дочірні вузли:",
-            
             # Settings Dialog (Learning)
             "common_settings": "Загальні налаштування",
             "show_interval": "Інтервал показів:",
@@ -683,22 +664,21 @@ class I18n:
             "font": "Шрифт:",
             "font_size": "Розмір шрифту:",
             "pt_suffix": " pt",
-            "window_size": "Розміри вікна:",
+            "window_size": "Розмір вікна:",
             "px_suffix": " px",
             "screen_position": "Позиція на екрані:",
             "pos_center": "По центру",
-            "pos_bottom_right": "Знизу справа",
-            "pos_top_right": "Зверху справа",
-            "pos_top_left": "Зверху зліва",
+            "pos_bottom_right": "Знизу праворуч",
+            "pos_top_right": "Зверху праворуч",
+            "pos_top_left": "Зверху ліворуч",
             "show_children_notes": "Одразу показувати текст дочірніх вузлів",
-            "show_children_notes_tooltip": "Якщо вимкнено — показуються лише заголовки дочірніх вузлів.\nКлік по заголовку відкриває картку цього вузла поза чергою.",
+            "show_children_notes_tooltip": "Якщо вимкнено — показуються лише заголовки дочірніх вузлів.\nКлік по заголовку відкриває картку того вузла поза чергою.",
             "tree_specific_settings": "Налаштування для кожного дерева окремо",
             "test_card": "🧪 Тест картки",
-            "start_learning_btn": "🚀 Почати навчання",
+            "start_learning_btn": "▶️ Почати навчання",
             "random": "Випадково",
             "sequential": "Послідовно",
             "sequential_tooltip": "Спочатку основна гілка зверху вниз, потім відгалуження. Вузли одного дерева показуються підряд.",
-            
             # Settings Dialog (View)
             "view_settings_title": "Налаштування відображення",
             "node_sizes": "Розміри вузлів",
@@ -709,19 +689,18 @@ class I18n:
             "vertical": "По вертикалі:",
             "text_settings": "Текст",
             "alignment": "Вирівнювання:",
-            "align_left": "Зліва",
+            "align_left": "Ліворуч",
             "align_center": "По центру",
-            "align_right": "Справа",
+            "align_right": "Праворуч",
             "structure": "Структура",
             "max_parents": "Макс. батьків у вузла:",
-            "max_parents_tooltip": "Максимальна кількість батьків, яку може мати один вузол.\nЗначення 1 = строга деревоподібна структура.",
-            
+            "max_parents_tooltip": "Максимальна кількість батьків, яку може мати один вузол.\nЗначення 1 = сувора деревоподібна структура.",
             # Import Dialog
             "import_json_title": "Імпорт дерева з JSON",
-            "import_instructions": "Вставте JSON-код дерева нижче. Ви можете використати шаблон як основу.\nПідтримуються коментарі (// та /* */) і висячі коми — вони будуть автоматично очищені.",
+            "import_instructions": "Вставте JSON-код дерева нижче. Ви можете використовувати шаблон як основу.\nПідтримуються коментарі (// та /* */), а також висячі коми — вони будуть автоматично очищені.",
             "add_tree_btn": "Додати дерево",
-            "empty_input": "Поле вводу порожнє.",
-            "json_syntax_error": "Помилка синтаксису JSON: {msg} (рядок {lineno}, стовпець {colno}).",
+            "empty_input": "Поле введення порожнє.",
+            "json_syntax_error": "Помилка синтаксису JSON: {msg} (рядок {lineno}, колонка {colno}).",
             "structure_error": "Помилка структури: {err_msg}",
             "unexpected_error": "Непередбачена помилка при створенні дерева: {e}",
             "invalid_root_object": "Очікується JSON-об'єкт (словник) у корені.",
@@ -735,48 +714,44 @@ class I18n:
             "invalid_child_ref": "Вузол '{id}' посилається на неіснуючого нащадка '{c}'.",
             "root_id_not_found": "Вказаний root_id '{root_id}' не знайдено серед вузлів.",
             "no_root_node": "Не вказано root_id, і немає жодного вузла без батьків.",
-            
             # Import Template
             "import_tpl_title": "Назва вашого дерева",
-            "import_tpl_root_id": "ID кореневого вузла (має збігатися з одним з id у списку nodes)",
-            "import_tpl_nodes_desc": "Список усіх вузлів дерева. Кожен вузол повинен мати унікальний id.\nparents і children — це масиви id пов'язаних вузлів.",
+            "import_tpl_root_id": "ID кореневого вузла (має збігатися з одним із id у списку nodes)",
+            "import_tpl_nodes_desc": "Список усіх вузлів дерева. Кожен вузол повинен мати унікальний id.\nparents та children — це масиви id пов'язаних вузлів.",
             "import_tpl_main_q": "Головне питання або концепція. Рекомендується формулювати їх так, щоб вони були зрозумілі незалежно від інших вузлів...",
             "import_tpl_answer": "Відповідь або докладний опис.",
             "import_tpl_clarifying": "Уточнююче питання",
-            "import_tpl_details": "Деталі, що розвивають тему.",
+            "import_tpl_details": "Деталі, які розвивають тему.",
             "import_tpl_coords": "Координати (необов'язково)",
-            
             # Default names
             "default_node_title": "Новий вузол",
             "default_tree_title": "Нове дерево",
             "default_root_title": "Головна ідея",
             "default_new_child": "Новий дочірній вузол",
             "default_new_parent": "Новий батьківський вузол",
-            
             # Node UI
-            "parent_btn": "🔼 Батьківський",
-            "child_btn": "➕ Дочірній",
-            "delete_btn": "❌ Видалити",
+            "parent_btn": "👴 Батьківський",
+            "child_btn": "👶 Дочірній",
+            "delete_btn": "🗑️ Видалити",
             "no_note_placeholder": "<i style='color: #9ca3af;'>Немає пояснення (натисніть, щоб додати)</i>",
-            
             # I18n UI
             "language": "Мова",
         },
         "ja": {
             'app_title': 'Basalt - ナレッジツリー',
             'new_db': '新規データベース',
-            'my_trees': '📚 ツリー一覧',
+            'my_trees': '🌳 ツリー一覧',
             'open': '📂 開く...',
             'save': '💾 保存',
             'save_as': '💾 名前を付けて保存...',
             'export': '📤 エクスポート...',
-            'new_tree': '➕ 新規ツリー',
+            'new_tree': '🌱 新規ツリー',
             'import_tree': '📥 ツリーのインポート',
-            'rename_tree': '✏️ 名前を変更',
-            'delete_tree': '🗑 ツリーを削除',
+            'rename_tree': '✏️ 名前変更',
+            'delete_tree': '🗑️ ツリー削除',
             'auto_layout': '📐 自動レイアウト',
             'view_settings': '⚙️ 表示設定',
-            'start_learning': '🧠 学習を開始',
+            'start_learning': '🧠 学習開始',
             'stop_learning': '⏹ 停止',
             'success': '成功',
             'error': 'エラー',
@@ -790,21 +765,21 @@ class I18n:
             'save_btn': '💾 保存',
             'dont_save_btn': '保存しない',
             'cannot_be_parent_title': '実行できません',
-            'cross_tree_move_title': '制限事項',
+            'cross_tree_move_title': '制約事項',
             'open_db_title': 'ナレッジベースを開く',
             'save_db_title': 'ナレッジベースを保存',
             'export_db_title': 'ナレッジベースをエクスポート',
             'json_filter': 'JSONファイル (*.json)',
             'db_loaded': 'データベース «{name}» を読み込みました。',
-            'db_exported': 'データベースをエクスポートしました:\n{path}',
-            'save_failed': '保存に失敗しました:\n{e}',
-            'open_failed': 'ファイルを開けませんでした:\n{e}',
-            'saved_msg': '💾 保存完了: {path}',
+            'db_exported': 'データベースをエクスポートしました：\n{path}',
+            'save_failed': '保存に失敗しました：\n{e}',
+            'open_failed': 'ファイルを開けませんでした：\n{e}',
+            'saved_msg': '💾 保存完了：{path}',
             'welcome_title': 'Basaltへようこそ！',
-            'welcome_text': 'まだ保存されたナレッジベースがありません。\n\n«➕ 新規ツリー» ボタンで最初のツリーを作成するか、«📂 開く...» で既存のデータベースを読み込んでください。',
+            'welcome_text': 'まだ保存されたナレッジベースはありません。\n«🌱 新規ツリー» ボタンで最初のツリーを作成するか、«📂 開く...» で既存のデータベースを読み込んでください。',
             'select_tree_first': '最初にツリーを選択してください。',
-            'rename_tree_title': 'ツリーの名前を変更',
-            'rename_tree_prompt': '新しい名前:',
+            'rename_tree_title': 'ツリーの名前変更',
+            'rename_tree_prompt': '新しい名前：',
             'delete_tree_title': 'ツリーの削除',
             'delete_tree_confirm': 'ツリー «{title}» とそのすべてのノードを削除しますか？\nこの操作は取り消せません。',
             'tree_already_exists': '同名のツリーが既に存在します',
@@ -815,32 +790,32 @@ class I18n:
             'node_not_found': 'どのツリーにもノードが見つかりません。',
             'delete_node_title': 'ノードの削除',
             'delete_node_prompt': '選択したノードをどのように削除しますか？',
-            'delete_node_info': '<b>このノードのみ</b> — 子ノードは親ノードに再接続されます。<br><b>ブランチ全体</b> — ノードとすべての子孫ノードを一緒に削除します。',
-            'node_only_btn': 'このノードのみ',
+            'delete_node_info': '<b>ノードのみ</b> – 子ノードは親ノードに再接続されます。<br><b>ブランチ全体</b> – ノードとそのすべての子孫を一緒に削除します。',
+            'node_only_btn': 'ノードのみ',
             'entire_branch_btn': 'ブランチ全体',
-            'cannot_be_parent': 'このノードを親ノードに設定することはできません。選択したノードの子孫であるため循環参照が発生します。',
+            'cannot_be_parent': 'このノードを親に設定することはできません。選択したノードの子孫であるため、循環参照が発生します。',
             'add_parent_title': '親ノードを追加',
-            'create_new_parent': '➕ 新しい親ノードを作成',
-            'select_existing_node': '🔎 既存のノードを選択',
-            'locked_descendant': ' (不可: 子孫ノード)',
+            'create_new_parent': '🌱 新しい親ノードを作成',
+            'select_existing_node': '🔍 既存のノードを選択',
+            'locked_descendant': ' (不可: 子孫)',
             'locked_other_tree': ' (現在のツリー内のみ)',
-            'select_available_node': 'リストから選択可能なノードを選んでください。',
-            'cross_tree_move': 'ツリー間でのノードの移動はまだサポートされていません。\n現在のツリー内のノードを選択してください。',
+            'select_available_node': 'リストから利用可能なノードを選択してください。',
+            'cross_tree_move': 'ツリー間でのノード移動はまだサポートされていません。\n現在のツリー内のノードを選択してください。',
             'learning_started_title': '学習モード開始',
-            'learning_started_text': '{minutes}分ごとにカードが表示されます。\nバックグラウンドで実行されますのでそのまま作業をお続けください。',
+            'learning_started_text': '{minutes}分ごとにカードが表示されます。\n他の作業をしていても大丈夫です。アプリはバックグラウンドで動作します。',
             'learning_stopped': 'バックグラウンドモードを停止しました。',
             'learning_settings_title': '学習モードの設定',
             'no_cards_title': 'カードがありません',
-            'no_cards_text': '復習するカードがありません。\n\n考えられる理由:\n• 本日のカード復習がすべて完了している\n• 設定でツリーが無効化されている\n• プロジェクトにツリーが存在しない',
-            'review_title': 'Basalt — 復習',
+            'no_cards_text': '復習するカードがありません。\n考えられる理由：\n• 今日のカードはすべて復習済み\n• 設定でツリーが無効になっている\n• プロジェクトにツリーがない',
+            'review_title': 'Basalt – 復習',
             'unknown_tree': '不明なツリー',
-            'spaced_repetition': '間隔反復記憶法 (Anki方式)',
-            'node_deleted_moved': 'このノードは削除されたか移動されました。',
-            'in_tree_btn': 'ツリー内で移動',
-            'in_tree_tooltip': 'キャンバス上の対応するノードへ移動します',
+            'spaced_repetition': '🧠 間隔反復法',
+            'node_deleted_moved': '⚠️ このノードは学習中に削除または移動されました。',
+            'in_tree_btn': '🌳 ツリー内で移動',
+            'in_tree_tooltip': 'メインウィンドウの対応ノードへ移動します',
             'show_answer': '答えを表示',
-            'again_1': 'もう一度 (1分)',
-            'hard_2': '難しい (10分)',
+            'again_1': 'もう一度 (1点)',
+            'hard_2': '難しい (10点)',
             'good_3': '普通 (1日)',
             'easy_5': '簡単 (4日)',
             'explanation': '解説',
@@ -862,14 +837,14 @@ class I18n:
             'pos_bottom_right': '右下',
             'pos_top_right': '右上',
             'pos_top_left': '左上',
-            'show_children_notes': '子ノードのメモを表示',
-            'show_children_notes_tooltip': 'カード内に子ノードのタイトルとノートを表示します',
+            'show_children_notes': '子ノードのメモも表示',
+            'show_children_notes_tooltip': 'オフの場合、子ノードのタイトルのみが表示されます。',
             'tree_specific_settings': 'ツリー個別設定',
             'test_card': '🧪 テストカード',
-            'start_learning_btn': '▶ 学習を開始',
+            'start_learning_btn': '▶️ 学習開始',
             'random': 'ランダム表示',
-            'sequential': '順次表示',
-            'sequential_tooltip': '間隔反復アルゴリズムを使用せず、指定間隔で順番にカードを表示します',
+            'sequential': '順番表示',
+            'sequential_tooltip': '学習モードでは基本的にランダムですが、同じツリーのノードは連続して表示されます。',
             'view_settings_title': '表示設定',
             'node_sizes': 'ノードサイズ',
             'width': '幅',
@@ -884,45 +859,45 @@ class I18n:
             'align_right': '右揃え',
             'structure': '構造',
             'max_parents': '最大親ノード数',
-            'max_parents_tooltip': '1ノードあたりの最大親ノード数 (1–5)',
+            'max_parents_tooltip': '1つのノードが持てる最大の親ノード数 (1〜5)',
             'import_json_title': 'ツリーJSONをインポート',
-            'import_instructions': 'ツリーインポートの手順と形式',
-            'add_tree_btn': '➕ ツリーを追加',
+            'import_instructions': 'ツリーインポートの形式とテンプレート',
+            'add_tree_btn': '🌱 ツリーを追加',
             'empty_input': 'Input field is empty.',
             'json_syntax_error': 'JSON構文エラー: {e}',
             'structure_error': '構造エラー',
-            'unexpected_error': '予期しないエラーが発生しました: {e}',
-            'invalid_root_object': 'インポートエラー: ルートオブジェクトは辞書型である必要があります。',
+            'unexpected_error': 'ツリー作成時に予期しないエラーが発生しました: {e}',
+            'invalid_root_object': 'インポートエラー: ルートレベルでは辞書形式である必要があります。',
             'missing_title_field': 'ノード «{nid}» に必須の «title» フィールドがありません。',
             'missing_nodes_field': 'インポートエラー: 必須フィールド «nodes» が存在しません。',
-            'invalid_nodes_format': 'インポートエラー: «nodes» フィールドはリスト型である必要があります。',
+            'invalid_nodes_format': 'インポートエラー: «nodes» フィールドはリストである必要があります。',
             'empty_nodes_list': 'インポートエラー: «nodes» リストが空です。',
-            'invalid_node_object': 'ノード #{idx} のデータ形式が正しくありません (辞書型である必要があります)。',
+            'invalid_node_object': 'ノード #{idx} のデータ形式が正しくありません (ルートレベルでは辞書である必要があります)。',
             'missing_node_id': 'ノード #{idx} に必須の «id» フィールドがありません。',
-            'invalid_parent_ref': 'ノード «{nid}» の親ノード参照 «{pid}» が存在しません。',
-            'invalid_child_ref': 'ノード «{nid}» の子ノード参照 «{cid}» が存在しません。',
+            'invalid_parent_ref': 'ノード «{nid}» の親参照 «{pid}» が存在しません。',
+            'invalid_child_ref': 'ノード «{nid}» の子参照 «{cid}» が存在しません。',
             'root_id_not_found': '指定された root_id «{rid}» がノード一覧に見つかりません。',
-            'no_root_node': 'ルートノードが見つかりません。少なくとも1つの親ノードを持たないノードが必要です。',
-            'import_tpl_title': '必須の構造 (テンプレート)',
-            'import_tpl_root_id': '• root_id — メインルートノードのID (文字列)。省略時は自動検出されます。',
-            'import_tpl_nodes_desc': '• nodes — ツリー内のすべてのノードのリスト。',
-            'import_tpl_main_q': '• title — ノードのタイトル (メインの質問/概念)。必須。',
-            'import_tpl_answer': '• note — 解説・答え (Markdown対応)。オプション。',
-            'import_tpl_clarifying': '• clarifying_note — 状況補足用の短いノート。オプション。',
-            'import_tpl_details': '• children / parents — ノードIDのリスト。構造接続に使用されます。',
-            'import_tpl_coords': '• x, y — キャンバス上の座標。省略時は自動レイアウトされます。',
-            'default_node_title': '新しいノード',
-            'default_tree_title': '新しいツリー',
+            'no_root_node': 'root_id が指定されておらず、親を持たないノードもありません。少なくとも1つの親のないノードが必要です。',
+            'import_tpl_title': 'ツリーの名称 (サンプル)',
+            'import_tpl_root_id': '• root_id – メインノードのID (文字列) ※自動チェックされます',
+            'import_tpl_nodes_desc': '• nodes – ツリー内のすべてのノードのリスト',
+            'import_tpl_main_q': '• title – ノードのみにゅう (メインの質問/概念) ※必須',
+            'import_tpl_answer': '• note – 解説・回答 (Markdown対応) ※任意だけど推奨',
+            'import_tpl_clarifying': '• clarifying_note – 補足説明用の短いノート ※任意',
+            'import_tpl_details': '• children / parents – ノードIDのリスト ※構造接続に使用されます',
+            'import_tpl_coords': '• x, y – ロケーション上の座標 ※知識ベースは自動レイアウトされます',
+            'default_node_title': '新規ノード',
+            'default_tree_title': '新規ツリー',
             'default_root_title': 'メインアイデア',
-            'default_new_child': '新しい子ノード',
-            'default_new_parent': '新しい親ノード',
-            'parent_btn': '🔼 親ノード',
-            'child_btn': '➕ 子ノード',
-            'delete_btn': '❌ 削除',
-            'no_note_placeholder': "<i style='color: #9ca3af;'>解説がありません (クリックして追加)</i>",
+            'default_new_child': '新規子ノード',
+            'default_new_parent': '新規親ノード',
+            'parent_btn': '👴 親ノード',
+            'child_btn': '👶 子ノード',
+            'delete_btn': '🗑️ 削除',
+            'no_note_placeholder': "<i style='color: #9ca3af;'>解説はありません (クリックして追加)</i>",
             'language': '言語',
         }
-    }
+    } 
 
     @classmethod
     def instance(cls):

@@ -12,6 +12,8 @@ class BasaltCanvas(QGraphicsView):
     add_child_requested = pyqtSignal(str)
     add_parent_requested = pyqtSignal(str)
     delete_node_requested = pyqtSignal(str)
+    move_child_left_requested = pyqtSignal(str)
+    move_child_right_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -21,7 +23,6 @@ class BasaltCanvas(QGraphicsView):
         self.setBackgroundBrush(QColor("#f7f8fa"))
         self.setDragMode(QGraphicsView.NoDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-
         self.tree: BasaltTree = None
         self.settings: LayoutSettings = LayoutSettings()
         self.ui_nodes = {}
@@ -36,8 +37,6 @@ class BasaltCanvas(QGraphicsView):
         self.selected_id = None
         self.collapsed_nodes.clear()
         self.redraw()
-        
-        # Center the viewport if explicitly requested (e.g., on tree switch or auto-layout)
         if center_view:
             self._center_view_on_tree()
 
@@ -45,15 +44,12 @@ class BasaltCanvas(QGraphicsView):
         """Centers the viewport on the tree's bounding box."""
         if not self.ui_nodes:
             return
-        
         w = self.settings.node_width
         h = self.settings.node_height
-        
         min_x = min(n.x() for n in self.ui_nodes.values())
         min_y = min(n.y() for n in self.ui_nodes.values())
         max_x = max(n.x() + w for n in self.ui_nodes.values())
         max_y = max(n.y() + h for n in self.ui_nodes.values())
-        
         center_x = (min_x + max_x) / 2
         center_y = (min_y + max_y) / 2
         self.centerOn(center_x, center_y)
@@ -68,14 +64,11 @@ class BasaltCanvas(QGraphicsView):
         if self.selected_id == node_id: return
         old_id = self.selected_id
         self.selected_id = node_id
-
-        self.scene.setFocusItem(None) # now we change focus from any widget to make focusOutEvent work and our description was saved
-
+        self.scene.setFocusItem(None) 
         if old_id and old_id in self.ui_nodes:
             self.ui_nodes[old_id].set_selected(False)
         if node_id and node_id in self.ui_nodes:
             self.ui_nodes[node_id].set_selected(True)
-
         if node_id:
             self.node_selected.emit(node_id)
 
@@ -108,7 +101,6 @@ class BasaltCanvas(QGraphicsView):
         if self.tree.root_id:
             collect_visible(self.tree.root_id)
 
-        # 1. Draw links (accounting for multiple parents)
         drawn_links = set()
         for nid in visible_ids:
             node = self.tree.nodes[nid]
@@ -117,9 +109,8 @@ class BasaltCanvas(QGraphicsView):
                     key = tuple(sorted((nid, cid)))
                     if key not in drawn_links:
                         self._draw_link(node, self.tree.nodes[cid])
-                    drawn_links.add(key)
+                        drawn_links.add(key)
 
-        # 2. Create UI nodes
         for nid in visible_ids:
             node = self.tree.nodes[nid]
             ui_node = UINode(node, self, self.settings)
@@ -127,8 +118,6 @@ class BasaltCanvas(QGraphicsView):
             self.scene.addItem(ui_node)
             self.ui_nodes[nid] = ui_node
 
-        # 3. CRITICAL FIX: Update scene rect to fit all items with padding.
-        # Without this, scrollbars break and nodes might appear "invisible".
         if self.ui_nodes:
             w = self.settings.node_width
             h = self.settings.node_height
@@ -137,8 +126,8 @@ class BasaltCanvas(QGraphicsView):
             max_x = max(n.x() + w for n in self.ui_nodes.values())
             max_y = max(n.y() + h for n in self.ui_nodes.values())
             padding = 150
-            self.scene.setSceneRect(min_x - padding, min_y - padding, 
-                                    (max_x - min_x) + 2 * padding, 
+            self.scene.setSceneRect(min_x - padding, min_y - padding,
+                                    (max_x - min_x) + 2 * padding,
                                     (max_y - min_y) + 2 * padding)
 
     def _draw_link(self, parent_node, child_node):
@@ -170,7 +159,6 @@ class BasaltCanvas(QGraphicsView):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.LeftButton:
             if not self._hit_node(event):
-                # Click on empty space: clear selection and enable panning
                 if self.selected_id:
                     self.select_node(None)
                 self._panning = True
